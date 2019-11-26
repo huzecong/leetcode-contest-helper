@@ -4,47 +4,18 @@ import http.cookiejar
 import json
 import os
 import pickle
-import socket
+import shutil
 import sys
-import tempfile
 import traceback
+from collections import defaultdict
 from enum import Enum, auto
+from typing import Any, Dict, List, NamedTuple, Optional, Tuple, Union, NewType
 
-import requests
-from PIL import Image
 from selenium import webdriver
 from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.common.by import By
-from selenium.webdriver.remote.command import Command
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
-from typing import NamedTuple, List, Tuple, Dict, Any, Optional, Union
-
-
-def save_screenshot_of(elem, browser):
-    location = elem.location
-    size = elem.size
-
-    f = tempfile.NamedTemporaryFile()
-    browser.save_screenshot(f.name)
-
-    im = Image.open(f.name)
-    left = location['x']
-    top = location['y']
-    right = left + size['width']
-    bottom = top + size['height']
-    im = im.crop((left, top, right, bottom))
-
-    f.close()
-    return im
-
-
-def check_alive(browser):
-    try:
-        browser.execute(Command.STATUS)
-        return True
-    except (socket.error, http.client.CannotSendRequest, WebDriverException):
-        return False
 
 
 def update_cookie(username, password):
@@ -308,7 +279,7 @@ def parse_problem(problem: Problem) -> Union[ProblemSignature, InteractiveProble
         return ProblemSignature(func_signature, examples)
 
 
-def generate_code(signature: ProblemSignature) -> Tuple[str, str]:
+def generate_code(problem: Problem, signature: Union[ProblemSignature, InteractiveProblemSignature]) -> Tuple[str, str]:
     r"""Generate code given the signature. Code consists of two parts:
 
     - Code for the solution class. This is basically the template as-is, but could also include the statement in
@@ -316,36 +287,208 @@ def generate_code(signature: ProblemSignature) -> Tuple[str, str]:
     - Code for testing the solution. This includes test functions for each example, and also the main function where
       the test functions are called and results are compared.
 
-    :return: A tuple of two strings, corresponding to code for the solution class, and code for testing.
+    :return: A tuple of two lists of strings, corresponding to code for the solution class, and code for testing.
     """
+    # Generate solution code as the crawled template and (potentially) the statement in comments.
+    solution_code = '\n'.join(problem.code)
+    if len(problem.statement) > 0:
+        statement = ["// " + line for line in problem.statement.split('\n')]
+        solution_code = '\n'.join(statement) + "\n\n" + solution_code
+
+    def to_str(val: Any) -> str:
+        if isinstance(val, list):
+            return "{" + ", ".join(to_str(x) for x in val) + "}"
+        if isinstance(val, str):
+            if len(val) == 1:
+                return f"'{val}'"
+            return f'"{val}"'
+        if isinstance(val, bool):  # bool is a subtype of int
+            return "true" if val else "false"
+        if isinstance(val, (int, float)):
+            return str(val)
+        assert False
+
+    def to_tree(parent: List[Optional[int]]) -> str:
+        return f"_construct_tree({{{', '.join('NONE' if x is None else str(x) for x in parent)}}})"
+
+    def to_val(val: Any, type_name: str) -> str:
+        if type_name.replace(' ', '') == "TreeNode*":
+            return to_tree(val)
+        return to_str(val)
+
+    def to_args(input: Dict[str, Any], func_sig: FunctionSignature) -> List[str]:
+        # Return list of assignments.
+        assignments = []
+        for type_name, arg_name in func_sig.arguments:
+            assignments.append(assign(f"{func_sig.name}_{arg_name}", to_val(input[arg_name], type_name)))
+        return assignments
+
+    def call(func_name: str, args: List[str]) -> str:
+        return f"{func_name}({', '.join(args)})"
+
+    def ctor(class_name: str, obj_name: str, args: List[str]) -> str:
+        return f"{class_name} {call(obj_name, args)};"
+
+    def remove_cv_ref(typ: str) -> str:
+        while True:
+            if typ.startswith("const"):
+                typ = typ[len("const"):]
+            elif typ.startswith("volatile"):
+                typ = typ[len("volatile"):]
+            elif typ.endswith("&"):
+                typ = typ[:-1]
+            else:
+                break
+            typ = typ.strip()
+        return typ
+
+    def decl(type_name: str, obj_name: Union[str, List[str]]) -> str:
+        type_name = remove_cv_ref(type_name)
+        if isinstance(obj_name, list):
+            return f"{type_name} {', '.join(obj_name)};"
+        return f"{type_name} {obj_name};"
+
+    def assign(obj_name: str, value: str) -> str:
+        return f"{obj_name} = {value};"
+
+    def decl_assign(ret_type: str, obj_name: str, value: str) -> str:
+        ret_type = remove_cv_ref(ret_type)
+        return f"{ret_type} {obj_name} = {value};"
+
+    # Generate test code as a function per example.
+    test_functions = []
+    instance_name = "_sol"
+    if isinstance(signature, InteractiveProblemSignature):
+        func_map: Dict[str, FunctionSignature] = {func_sig.name: func_sig for func_sig in signature.functions}
+        for idx, example in enumerate(signature.examples):
+            statements = []
+            for ex_idx, ex in enumerate(example):
+                func_sig = func_map[ex.function]
+                statements.extend(to_args(ex.input, func_sig))
+                args = [f"{func_sig.name}_{arg_name}" for _, arg_name in func_sig.arguments]
+                if ex.function == signature.class_name:
+                    ctor_stmt = ctor(signature.class_name, instance_name, args)
+                    statements.append(ctor_stmt)
+                else:
+                    ret_name = f"_ret{ex_idx}"
+                    if func_sig.return_type is not None:
+                        ret_ans_var = f"_ret_ans{ex_idx}"
+                        stmts = [
+                            decl_assign(func_sig.return_type, ret_ans_var, to_val(ex.output, func_sig.return_type)),
+                            decl_assign(func_sig.return_type, ret_name, f"{instance_name}.{call(ex.function, args)}"),
+                            call("test", [to_str(f"{problem.name} - Example {idx} - Interaction {ex_idx}"),
+                                          ret_ans_var, ret_name]) + ";",
+                        ]
+                        statements.extend(stmts)
+                    else:
+                        stmt = call(ex.function, args) + ";"
+                        statements.append(stmt)
+            declarations = defaultdict(list)
+            for func_sig in signature.functions:
+                for type_name, arg_name in func_sig.arguments:
+                    declarations[type_name].append(f"{func_sig.name}_{arg_name}")
+            test_fn = '\n'.join([
+                f"void test_example_{idx}() {{",
+                *["    " + decl(type_name, objs) for type_name, objs in declarations.items()],
+                *["    " + line for line in statements],
+                "}"])
+            test_functions.append(test_fn)
+
+        main_code = '\n'.join([
+            "int main() {",
+            *["    " + f"test_example_{idx}();" for idx in range(len(signature.examples))],
+            "}"])
+    else:
+        func_sig = signature.function
+        for idx, example in enumerate(signature.examples):
+            statements = []
+            for type_name, arg_name in func_sig.arguments:
+                stmt = decl_assign(type_name, arg_name, to_val(example.input[arg_name], type_name))
+                statements.append(stmt)
+            args = [arg_name for _, arg_name in func_sig.arguments]
+            ret_name = "_ret"
+            ret_ans_var = "_ret_ans"
+            stmts = [
+                decl_assign(func_sig.return_type, ret_ans_var, to_val(example.output, func_sig.return_type)),
+                decl_assign(func_sig.return_type, ret_name, f"{instance_name}.{call(func_sig.name, args)}"),
+                call("test", [to_str(f"{problem.name} - Example {idx}"), ret_ans_var, ret_name]) + ";",
+            ]
+            statements.extend(stmts)
+
+            test_fn = '\n'.join([
+                f"void test_example_{idx}(Solution &_sol) {{",
+                *["    " + line for line in statements],
+                "}"])
+            test_functions.append(test_fn)
+
+        main_code = '\n'.join([
+            "int main() {",
+            "    Solution _sol;",
+            *[f"    test_example_{idx}(_sol);" for idx in range(len(signature.examples))],
+            "}"])
+
+    test_code = "\n\n".join(test_functions + [main_code])
+    return solution_code, test_code
 
 
 def create_project(project_name: str, problems: List[Problem]) -> None:
     if not os.path.exists(project_name):
         os.mkdir(project_name)
+    with open("template.cpp", "r") as f:
+        template = f.read().strip().split("\n")
+    solution_start_line = template.index("// BEGIN SOLUTION CLASS")
+    solution_end_line = template.index("// END SOLUTION CLASS")
+    test_start_line = template.index("// BEGIN TEST")
+    test_end_line = template.index("// END TEST")
+
+    file_names = [chr(ord('A') + idx) for idx in range(len(problems))]
     for idx, problem in enumerate(problems):
         problem_signature = parse_problem(problem)
-        solution_code, test_code = generate_code(problem_signature)
-        with open(os.path.join(project_name, f"{idx}.cpp")) as f:
-            f.write(template_code)
+        solution_code, test_code = generate_code(problem, problem_signature)
+        lines = "\n".join([
+            "\n".join(template[:(solution_start_line + 1)]),
+            solution_code,
+            "\n".join(template[solution_end_line:(test_start_line + 1)]),
+            test_code,
+            "\n".join(template[test_end_line:])])
+        with open(os.path.join(project_name, f"{file_names[idx]}.cpp"), "w") as f:
+            f.write(lines + "\n")
+
+    shutil.copy("testing.h", os.path.join(project_name, "testing.h"))
+
+    cmake = [
+        "cmake_minimum_required(VERSION 3.12)",
+        "project(leetcode)",
+        "set(CMAKE_CXX_STANDARD 17)",
+        'set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DLEETCODE_LOCAL")',
+        *[f"add_executable({name} {name}.cpp)" for name in file_names],
+    ]
+    with open(os.path.join(project_name, "CMakeLists.txt"), "w") as f:
+        f.write("\n".join(cmake))
 
 
 def main():
-    username = sys.argv[1]
-    password = getpass.getpass()
-
-    try:
-        print(f"Updating cookie for account `{username}`")
-        update_cookie(username, password)
-    except WebDriverException as e:
-        traceback.print_exc()
-        print(e.__class__.__name__ + ': ' + str(e))
+    # username = sys.argv[1]
+    # password = getpass.getpass()
+    #
+    # try:
+    #     print(f"Updating cookie for account `{username}`")
+    #     update_cookie(username, password)
+    # except WebDriverException as e:
+    #     traceback.print_exc()
+    #     print(e.__class__.__name__ + ': ' + str(e))
 
     contest_name = "weekly-contest-163"
-    problems = get_problems(f"https://leetcode.com/contest/{contest_name}")
-    # Save the raw info just in case.
-    with open(f"{contest_name}.pkl", "wb") as f:
-        pickle.dump(problems, f)
+    cache_file = f"{contest_name}.pkl"
+    if os.path.exists(cache_file):
+        with open(cache_file, "rb") as f:
+            problems = pickle.load(f)
+    else:
+        problems = get_problems(f"https://leetcode.com/contest/{contest_name}")
+        # Save the raw info just in case.
+        with open(cache_file, "wb") as f:
+            pickle.dump(problems, f)
+
     create_project(contest_name, problems)
 
 

@@ -24,51 +24,61 @@
 #include <cstring>
 #include <ctime>
 
+#include "testing.h"
+
 using namespace std;
 
-#ifdef HZC
+#ifdef LEETCODE_LOCAL
 
 template <typename T>
 void print(T *a, int n) {
     for (int i = 1; i < n; ++i)
-        cerr << a[i] << " ";
-    cerr << a[n] << endl;
+        std::cout << a[i] << " ";
+    std::cout << a[n] << std::endl;
 }
 
-#define PRINT(__l, __r, __s, __t) {                \
-    cerr << #__l #__s << "~" << #__t #__r << ": "; \
-    for (auto __i = __s; __i != __t; ++__i)        \
-        cerr << __l __i __r << " ";                \
-    cerr << endl;                                  \
+#define PRINT(__l, __r, __s, __t) {                     \
+    std::cout << #__l #__s << "~" << #__t #__r << ": "; \
+    for (auto __i = __s; __i != __t; ++__i)             \
+        std::cout << __l __i __r << " ";                \
+    std::cout << std::endl;                             \
 }
-
-template <typename T>
-void print(const T &x) { cout << x; }
-
-template <typename T>
-void print(const vector<T> &vec) {
-    for (int i = 0; i < vec.size(); ++i)
-        cout << (i == 0 ? "{" : ", ") << vec[i];
-    cout << "}";
-}
-
-template <>
-void print(const bool &x) { cout << (x ? "true" : "false"); }
 
 template <typename ...Args>
 void debug(Args ...args);
 
 template <>
-void debug() { cout << endl; }
+void debug() { std::cout << std::endl; }
 
 template <typename T, typename ...Args>
 void debug(const T &x, Args ...args) {
     print(x);
-    cout << " ";
+    std::cout << " ";
     debug(args...);
 }
 
-#endif
+#endif  // LEETCODE_LOCAL
+
+struct TreeNode {
+    int val;
+    TreeNode *left;
+    TreeNode *right;
+    TreeNode(int x) : val(x), left(NULL), right(NULL) {}
+    ~TreeNode() {
+        if (left != NULL) delete left;
+        if (right != NULL) delete right;
+    }
+};
+
+const int NONE = INT_MIN;
+
+TreeNode *_construct_tree(const vector<int> &parent, int idx = 0) {
+    if (idx >= parent.size() || parent[idx] == NONE) return NULL;
+    TreeNode *root = new TreeNode(parent[idx]);
+    root->left = _construct_tree(parent, idx * 2 + 1);
+    root->right = _construct_tree(parent, idx * 2 + 2);
+    return root;
+}
 
 // BEGIN SUBMIT
 
@@ -81,20 +91,13 @@ inline double runtime() {
     return (double)clock() / CLOCKS_PER_SEC;
 }
 
-#ifndef HZC
+#ifndef LEETCODE_LOCAL
 # define print(...)
 # define PRINT(...)
 # define debug(...)
-#endif
+#endif  // LEETCODE_LOCAL
 
 #define tget(a, b) get<b>(a)
-
-struct TreeNode {
-    int val;
-    TreeNode *left;
-    TreeNode *right;
-    TreeNode(int x) : val(x), left(NULL), right(NULL) {}
-};
 
 // BEGIN SOLUTION CLASS
 

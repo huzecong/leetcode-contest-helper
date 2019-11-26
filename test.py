@@ -2,7 +2,7 @@ import unittest
 from typing import Union
 
 from main import Problem, parse_problem, ProblemSignature, FunctionSignature, Example, InteractiveProblemSignature, \
-    InteractiveExample
+    InteractiveExample, generate_code
 
 
 class ParseTest(unittest.TestCase):
@@ -31,6 +31,10 @@ class ParseTest(unittest.TestCase):
             else:
                 assert parsed_signature.examples[idx].input == signature.examples[idx].input
                 assert parsed_signature.examples[idx].output == signature.examples[idx].output
+
+        solution_code, test_code = generate_code(problem, signature)
+        print(solution_code)
+        print(test_code)
 
     def test_parse_problem_1(self):
         problem = Problem(
