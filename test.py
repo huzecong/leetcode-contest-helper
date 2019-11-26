@@ -1,8 +1,10 @@
 import unittest
 from typing import Union
 
-from main import Problem, parse_problem, ProblemSignature, FunctionSignature, Example, InteractiveProblemSignature, \
-    InteractiveExample, generate_code
+from lchelper.codegen.cpp import generate_code
+from lchelper.parser import parse_problem
+from lchelper.common import FunctionSignature, Example, ProblemSignature, Interaction, \
+    InteractiveProblemSignature, Problem
 
 
 class ParseTest(unittest.TestCase):
@@ -146,36 +148,36 @@ class ParseTest(unittest.TestCase):
                     arguments=[("int", "target")])],
             examples=[
                 [
-                    InteractiveExample(
+                    Interaction(
                         function="FindElements",
                         input={"root": [-1, None, -1]}, output=None),
-                    InteractiveExample(
+                    Interaction(
                         function="find", input={"target": 1}, output=False),
-                    InteractiveExample(
+                    Interaction(
                         function="find", input={"target": 2}, output=True),
                 ],
                 [
-                    InteractiveExample(
+                    Interaction(
                         function="FindElements",
                         input={"root": [-1, -1, -1, -1, -1]}, output=None),
-                    InteractiveExample(
+                    Interaction(
                         function="find", input={"target": 1}, output=True),
-                    InteractiveExample(
+                    Interaction(
                         function="find", input={"target": 3}, output=True),
-                    InteractiveExample(
+                    Interaction(
                         function="find", input={"target": 5}, output=False),
                 ],
                 [
-                    InteractiveExample(
+                    Interaction(
                         function="FindElements",
                         input={"root": [-1, None, -1, -1, None, -1]}, output=None),
-                    InteractiveExample(
+                    Interaction(
                         function="find", input={"target": 2}, output=True),
-                    InteractiveExample(
+                    Interaction(
                         function="find", input={"target": 3}, output=False),
-                    InteractiveExample(
+                    Interaction(
                         function="find", input={"target": 4}, output=False),
-                    InteractiveExample(
+                    Interaction(
                         function="find", input={"target": 5}, output=True),
                 ],
             ]
