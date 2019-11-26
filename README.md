@@ -43,7 +43,8 @@ aims to do.
    ```bash
    python main.py get -l <languages> <url-to-contest-page>
    ```
-   For instance, to generate testing code in C++ and Python for Weekly Contest 163, run the command:
+   For instance, to generate testing code in C++ and Python for
+   [Weekly Contest 163](https://leetcode.com/contest/weekly-contest-163), run the command:
    ```bash
    python main.py get -l cpp python -o projects/ https://leetcode.com/contest/weekly-contest-163
    ```
@@ -65,4 +66,24 @@ cmake .
 make
 ./A  # to run tests for problem A
 ```
+You can also use IDEs (e.g., JetBrains CLion) to automate the process.
+ 
 Note that problems are renamed to single uppercase letters (in the same order as on the web page) for simplicity.
+
+The generated code contains quite a lot of boilerplate code for debugging. When submitting, remember to copy everything
+between the lines `// BEGIN SUBMIT` and `// END SUBMIT`.
+
+You can use your own template by modifying the `TEMPLATE_CODE` class variable in the file `lchelper/codegen/cpp.py`, but
+you should only do so if you understand what you're doing. Remember to keep the following parts intact:
+
+- Comments `// BEGIN *` and `// END *`. The code generator needs them to know where to insert generated code.
+- `struct TreeNode`, `const int NONE`, and `TreeNode *_construct_reee()`. These are required to handle tree inputs in
+  LeetCode format.
+- `#include "testing.h"`. This include points to a tiny header-only library for testing your output.
+
+
+## TODO
+
+- [ ] Python code generation
+- [ ] Automatic submission 
+- [ ] Customized code templates
