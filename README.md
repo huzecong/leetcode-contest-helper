@@ -21,7 +21,7 @@ aims to do.
 1. Install [Selenium](https://selenium-python.readthedocs.io/installation.html) and the
    [Chrome web driver](https://sites.google.com/a/chromium.org/chromedriver/downloads) by following instructions
    in the links.
-   
+
    **Note:** Although not tested, the code should also work with other web drivers supported by Selenium. Please change
    the code accordingly if you wish to use alternative browsers.
 2. Clone the repository:
@@ -35,21 +35,28 @@ aims to do.
    ```
    A browser window will open and navigate to the LeetCode login page. Please enter your credentials and click login
    (and get pass CAPTCHAs if they pop up).
-   
+
+   If your account is registered on [LeetCode-CN](https://leetcode-cn.com), use this command instead:
+   ```bash
+   python main.py login -s leetcode-cn <username>
+   ```
+
    **Note:** Unfortunately, it is not possible to access problem statements without logging in, as LeetCode prevents you
    from accessing the problems unless you have taken part in the contest or have a premium subscription. LCHelper stores
    your cookies and uses them to access the problems. Don't worry, your sensitive information is always stored locally.
+
+   **Note:** Third-party login is not supported as of now.
 4. Download problem descriptions and generate testing code in your favorite language:
    ```bash
-   python main.py get -l <languages> <url-to-contest-page>
+   python main.py get [-l <language>] <url-to-contest-page>
    ```
-   For instance, to generate testing code in C++ and Python for
+   For instance, to generate testing code in C++ and Python (not supported yet) for
    [Weekly Contest 163](https://leetcode.com/contest/weekly-contest-163), run the command:
    ```bash
-   python main.py get -l cpp python -o projects/ https://leetcode.com/contest/weekly-contest-163
+   python main.py get -l cpp -l python -o projects/ https://leetcode.com/contest/weekly-contest-163
    ```
    This will generate two folders under the folder `projects/`:
-   
+
    - `weekly-contest-163_cpp`: C++ code of problems in the contest.
    - `weekly-contest-163_python`: Python code of problems in the contest.
 
@@ -87,3 +94,4 @@ you should only do so if you understand what you're doing. Remember to keep the 
 - [ ] Python code generation
 - [ ] Automatic submission 
 - [ ] Customized code templates
+- [ ] Third-party login

@@ -332,7 +332,7 @@ inline double runtime() {
         return solution_code, test_code
 
     @classmethod
-    def create_project(cls, project_path: str, problems: List[Problem]) -> None:
+    def create_project(cls, project_path: str, problems: List[Problem], site: str) -> None:
         if not os.path.exists(project_path):
             os.makedirs(project_path)
         template = cls.TEMPLATE_CODE.strip().split("\n")
@@ -343,7 +343,7 @@ inline double runtime() {
 
         file_names = [chr(ord('A') + idx) for idx in range(len(problems))]
         for idx, problem in enumerate(problems):
-            problem_signature = parse_problem(problem)
+            problem_signature = parse_problem(problem, site)
             solution_code, test_code = cls.generate_code(problem, problem_signature)
             lines = "\n".join([
                 "\n".join(template[:(solution_start_line + 1)]),

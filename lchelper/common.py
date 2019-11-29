@@ -1,15 +1,24 @@
-from typing import Any, Dict, List, NamedTuple, Optional, Tuple, TypeVar, Type
+from typing import Any, Dict, List, NamedTuple, Optional, Tuple
 
 __all__ = [
+    "User",
     "Problem",
     "FunctionSignature",
     "Example",
     "ProblemSignature",
     "Interaction",
     "InteractiveProblemSignature",
-    "to_dict",
-    "from_dict",
 ]
+
+
+class User(NamedTuple):
+    username: str
+    site: str  # "leetcode" or "leetcode-cn"
+
+    def __repr__(self):
+        if self.site == "leetcode":
+            return self.username
+        return f"{self.username} ({self.site})"
 
 
 class Problem(NamedTuple):
@@ -54,15 +63,3 @@ class InteractiveProblemSignature(NamedTuple):
     class_name: str
     functions: List[FunctionSignature]
     examples: List[List[Interaction]]
-
-
-def to_dict(nm_tpl: NamedTuple) -> Dict[str, Any]:
-    return nm_tpl._asdict()
-
-
-TupleType = TypeVar('TupleType', bound=NamedTuple)
-
-
-def from_dict(tpl_class: Type[TupleType], d: Dict[str, Any]) -> TupleType:
-    assert all(field in d for field in tpl_class._fields)
-    return tpl_class(**d)

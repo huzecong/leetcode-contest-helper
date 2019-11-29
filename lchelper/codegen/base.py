@@ -41,5 +41,5 @@ class CodeGen(abc.ABC):
 
     @classmethod
     @abc.abstractmethod
-    def create_project(cls, project_path: str, problems: List[Problem]) -> None:
+    def create_project(cls, project_path: str, problems: List[Problem], site: str) -> None:
         raise NotImplementedError
