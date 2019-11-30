@@ -73,8 +73,8 @@ def main():
 
         cached_problems: Optional[List[Dict[str, Any]]] = None
         if not args.no_cache:
-            if contest_name in info:
-                cached_problems = info[contest_name]
+            if (site, contest_name) in info:
+                cached_problems = info[site, contest_name]
 
         if cached_problems is None:
             available_users = lchelper.get_users()
@@ -109,9 +109,11 @@ def main():
             user = candidates[0]
             cookie_path = lchelper.get_cookie_path(user.username, user.site)
             url = f"https://{user.site}.com/contest/{contest_name}"
+            lchelper.log(f"User: {user}, URL: {url}")
+
             problems = lchelper.get_problems(url, user.site, cookie_path)
 
-            info[contest_name] = [lchelper.utils.to_dict(p) for p in problems]
+            info[site, contest_name] = [lchelper.utils.to_dict(p) for p in problems]
             with open(CACHE_FILE, "wb") as f:
                 pickle.dump(info, f)
         else:

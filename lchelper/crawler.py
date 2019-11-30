@@ -3,6 +3,7 @@ import os
 from typing import List
 
 from selenium import webdriver
+from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as Expected
 from selenium.webdriver.support.wait import WebDriverWait
@@ -39,6 +40,19 @@ def get_cookie_path(username: str, site: str) -> str:
     return os.path.join(COOKIE_FOLDER, f"{username}@{site}.dat")
 
 
+def check_login(browser, site: str, timeout: int = 10) -> bool:
+    try:
+        if site == "leetcode":
+            WebDriverWait(browser, timeout).until(
+                Expected.presence_of_element_located((By.CSS_SELECTOR, 'img.avatar')))
+        else:  # site == "leetcode-cn"
+            WebDriverWait(browser, timeout).until(
+                Expected.presence_of_element_located((By.CSS_SELECTOR, 'span.ant-avatar')))
+        return True
+    except TimeoutException:
+        return False
+
+
 def update_cookie(username: str, site: str) -> None:
     r"""Update the cookie for the LeetCode user."""
     browser = webdriver.Chrome()
@@ -69,12 +83,8 @@ def update_cookie(username: str, site: str) -> None:
     # elem = browser.find_element_by_css_selector('button[data-cy="sign-in-btn"]')
     # browser.execute_script("arguments[0].click();", elem)
 
-    if site == "leetcode":
-        WebDriverWait(browser, 120).until(
-            Expected.presence_of_element_located((By.CSS_SELECTOR, 'img.avatar')))
-    else:  # site == "leetcode-cn"
-        WebDriverWait(browser, 120).until(
-            Expected.presence_of_element_located((By.CSS_SELECTOR, 'span.ant-avatar')))
+    if not check_login(browser, site, timeout=120):
+        raise RuntimeError("Login failed!")
 
     cookies = browser.get_cookies()
     jar = http.cookiejar.LWPCookieJar()
@@ -127,23 +137,31 @@ def get_problems(contest_url: str, site: str, cookie_path: str) -> List[Problem]
     cookie_jar.load(ignore_discard=True, ignore_expires=True)
     for c in cookie_jar:
         browser.add_cookie({"name": c.name, 'value': c.value, 'path': c.path})
+    browser.get(contest_url)  # visit again to refresh page with cookies added
+
+    if not check_login(browser, site, timeout=10):
+        browser.quit()
+        print(f"Cookie '{cookie_path}' might have expired. Please try logging in again")
+        exit(1)
 
     elem = browser.find_element_by_css_selector("ul.contest-question-list")
     links = elem.find_elements_by_tag_name("a")
     problem_paths = [(link.get_attribute("href"), link.text) for link in links]
     log(f"Found problems: {[name for _, name in problem_paths]!r}")
 
-    if site == "leetcode":
-        statement_css_selector = "div.question-content"
-        code_css_selector = "pre.CodeMirror-line"
-    else:  # site == "leetcode-cn"
-        statement_css_selector = "div[data-key='description-content'] div.content__1Y2H"
-        code_css_selector = "div.monaco-scrollable-element div.view-line"
-
     parsed_problems = []
     for idx, (problem_url, problem_name) in enumerate(problem_paths):
         browser.get(problem_url)
-        statement = browser.find_element_by_css_selector(statement_css_selector).text
+        try:
+            # Page during contest; editor located below statement.
+            statement_css_selector = "div.question-content"
+            code_css_selector = "pre.CodeMirror-line"
+            statement = browser.find_element_by_css_selector(statement_css_selector).text
+        except TimeoutException:
+            # Page after contest; statement and editor in vertically split panes.
+            statement_css_selector = "div[data-key='description-content'] div.content__1Y2H"
+            code_css_selector = "div.monaco-scrollable-element div.view-line"
+            statement = browser.find_element_by_css_selector(statement_css_selector).text
         examples = [
             elem.text for elem in browser.find_elements_by_css_selector("pre:not([class])") if elem.text]
         code = [elem.text for elem in browser.find_elements_by_css_selector(code_css_selector)]
