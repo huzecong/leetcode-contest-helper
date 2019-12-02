@@ -2,9 +2,9 @@ import os
 from collections import defaultdict
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-from lchelper.codegen.base import CodeGen
+from lchelper.codegen.base import Code, CodeGen, Signature
 from lchelper.common import *
-from lchelper.parser import parse_problem
+from lchelper.utils import remove_affix
 
 __all__ = [
     "CppCodeGen",
@@ -12,7 +12,23 @@ __all__ = [
 
 
 class CppCodeGen(CodeGen):
-    TESTING_H_CODE = r"""
+    @property
+    def language(self) -> str:
+        return "C++"
+
+    @property
+    def code_extension(self) -> str:
+        return ".cpp"
+
+    @property
+    def line_comment_symbol(self) -> str:
+        return "//"
+
+    @property
+    def extra_files(self) -> Dict[str, str]:
+        return {
+            # A header-only library for comparing outputs.
+            "_testing.h": r"""
 #ifndef TESTING_H
 #define TESTING_H
 
@@ -62,9 +78,9 @@ inline void test(const char *msg, const T &a, const T &b) {
 }
 
 #endif  // TESTING_H
-"""
-
-    TEMPLATE_CODE = r"""
+""",
+            # Boilerplate code for supporting LeetCode-specific constructs.
+            "_boilerplate.hpp": r"""
 #include <algorithm>
 #include <bitset>
 #include <complex>
@@ -91,12 +107,70 @@ inline void test(const char *msg, const T &a, const T &b) {
 #include <cstring>
 #include <ctime>
 
-#include "testing.h"
+#include "_testing.h"
 
 using namespace std;
 
-#ifdef LEETCODE_LOCAL
 
+struct TreeNode {
+    int val;
+    TreeNode *left;
+    TreeNode *right;
+    TreeNode(int x) : val(x), left(NULL), right(NULL) {}
+    ~TreeNode() {
+        if (left != NULL) delete left;
+        if (right != NULL) delete right;
+    }
+};
+
+const int NONE = INT_MIN;
+
+TreeNode *_construct_tree(const vector<int> &parent, int idx = 0) {
+    if (idx >= parent.size() || parent[idx] == NONE) return NULL;
+    TreeNode *root = new TreeNode(parent[idx]);
+    root->left = _construct_tree(parent, idx * 2 + 1);
+    root->right = _construct_tree(parent, idx * 2 + 2);
+    return root;
+}
+""",
+        }
+
+    @property
+    def template_code(self) -> str:
+        return r"""
+#include "_boilerplate.hpp"
+
+// BEGIN SUBMIT
+
+// BEGIN USER TEMPLATE
+
+// END USER TEMPLATE
+
+// BEGIN SOLUTION CLASS
+
+// END SOLUTION CLASS
+
+// END SUBMIT
+
+// BEGIN STATEMENT
+
+// END STATEMENT
+
+// BEGIN TEST
+
+// END TEST
+"""
+
+    @property
+    def user_template_code(self) -> str:
+        return r"""
+#ifndef LEETCODE_LOCAL
+# define print(...)
+# define PRINT(...)
+# define debug(...)
+#endif  // LEETCODE_LOCAL
+
+#ifdef LEETCODE_LOCAL
 template <typename T>
 void print(T *a, int n) {
     for (int i = 1; i < n; ++i)
@@ -123,31 +197,7 @@ void debug(const T &x, Args ...args) {
     std::cout << " ";
     debug(args...);
 }
-
 #endif  // LEETCODE_LOCAL
-
-struct TreeNode {
-    int val;
-    TreeNode *left;
-    TreeNode *right;
-    TreeNode(int x) : val(x), left(NULL), right(NULL) {}
-    ~TreeNode() {
-        if (left != NULL) delete left;
-        if (right != NULL) delete right;
-    }
-};
-
-const int NONE = INT_MIN;
-
-TreeNode *_construct_tree(const vector<int> &parent, int idx = 0) {
-    if (idx >= parent.size() || parent[idx] == NONE) return NULL;
-    TreeNode *root = new TreeNode(parent[idx]);
-    root->left = _construct_tree(parent, idx * 2 + 1);
-    root->right = _construct_tree(parent, idx * 2 + 2);
-    return root;
-}
-
-// BEGIN SUBMIT
 
 typedef long long ll;
 typedef unsigned int uint;
@@ -158,42 +208,12 @@ inline double runtime() {
     return (double)clock() / CLOCKS_PER_SEC;
 }
 
-#ifndef LEETCODE_LOCAL
-# define print(...)
-# define PRINT(...)
-# define debug(...)
-#endif  // LEETCODE_LOCAL
-
 #define tget(a, b) get<b>(a)
-
-// BEGIN SOLUTION CLASS
-
-// END SOLUTION CLASS
-
-// END SUBMIT
-
-// BEGIN TEST
-
-// END TEST
 """
 
-    @classmethod
-    def generate_code(cls, problem: Problem, signature: Union[ProblemSignature, InteractiveProblemSignature]) \
-            -> Tuple[str, str]:
-        r"""Generate code given the signature. Code consists of two parts:
-
-        - Code for the solution class. This is basically the template as-is, but could also include the statement in
-          comments.
-        - Code for testing the solution. This includes test functions for each example, and also the main function where
-          the test functions are called and results are compared.
-
-        :return: A tuple of two lists of strings, corresponding to code for the solution class, and code for testing.
-        """
-        # Generate solution code as the crawled template and (potentially) the statement in comments.
-        solution_code = '\n'.join(problem.code)
-        if len(problem.statement) > 0:
-            statement = ["// " + line for line in problem.statement.split('\n')]
-            solution_code = '\n'.join(statement) + "\n\n" + solution_code
+    def generate_code(self, problem: Problem, signature: Signature) -> Tuple[Code, Code]:
+        # Generate solution code as the crawled template.
+        solution_code = problem.code.copy()
 
         def to_str(val: Any) -> str:
             if isinstance(val, list):
@@ -288,17 +308,17 @@ inline double runtime() {
                 for func_sig in signature.functions:
                     for type_name, arg_name in func_sig.arguments:
                         declarations[type_name].append(f"{func_sig.name}_{arg_name}")
-                test_fn = '\n'.join([
+                test_fn = [
                     f"void test_example_{idx}() {{",
                     *["    " + decl(type_name, objs) for type_name, objs in declarations.items()],
                     *["    " + line for line in statements],
-                    "}"])
+                    "}"]
                 test_functions.append(test_fn)
 
-            main_code = '\n'.join([
+            main_code = [
                 "int main() {",
                 *["    " + f"test_example_{idx}();" for idx in range(len(signature.examples))],
-                "}"])
+                "}"]
         else:
             func_sig = signature.function
             for idx, example in enumerate(signature.examples):
@@ -316,53 +336,32 @@ inline double runtime() {
                 ]
                 statements.extend(stmts)
 
-                test_fn = '\n'.join([
+                test_fn = [
                     f"void test_example_{idx}(Solution &_sol) {{",
                     *["    " + line for line in statements],
-                    "}"])
+                    "}"]
                 test_functions.append(test_fn)
 
-            main_code = '\n'.join([
+            main_code = [
                 "int main() {",
                 "    Solution _sol;",
                 *[f"    test_example_{idx}(_sol);" for idx in range(len(signature.examples))],
-                "}"])
+                "}"]
 
-        test_code = "\n\n".join(test_functions + [main_code])
+        test_code = self.list_join(test_functions + [main_code], ["", ""])
         return solution_code, test_code
 
-    @classmethod
-    def create_project(cls, project_path: str, problems: List[Problem], site: str) -> None:
-        if not os.path.exists(project_path):
-            os.makedirs(project_path)
-        template = cls.TEMPLATE_CODE.strip().split("\n")
-        solution_start_line = template.index("// BEGIN SOLUTION CLASS")
-        solution_end_line = template.index("// END SOLUTION CLASS")
-        test_start_line = template.index("// BEGIN TEST")
-        test_end_line = template.index("// END TEST")
-
-        file_names = [chr(ord('A') + idx) for idx in range(len(problems))]
-        for idx, problem in enumerate(problems):
-            problem_signature = parse_problem(problem, site)
-            solution_code, test_code = cls.generate_code(problem, problem_signature)
-            lines = "\n".join([
-                "\n".join(template[:(solution_start_line + 1)]),
-                solution_code,
-                "\n".join(template[solution_end_line:(test_start_line + 1)]),
-                test_code,
-                "\n".join(template[test_end_line:])])
-            code_path = os.path.join(project_path, f"{file_names[idx]}.cpp")
-            cls.write_and_backup(code_path, lines + "\n")
-
-        with open(os.path.join(project_path, "testing.h"), "w") as f:
-            f.write(cls.TESTING_H_CODE)
-
+    def generate_additional_files(self, project_path: str, problems: List[Problem],
+                                  signatures: List[Signature]) -> None:
         cmake = [
             "cmake_minimum_required(VERSION 3.12)",
             "project(leetcode)",
             "set(CMAKE_CXX_STANDARD 17)",
             'set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DLEETCODE_LOCAL")',
-            *[f"add_executable({name} {name}.cpp)" for name in file_names],
         ]
+        for idx, problem in enumerate(problems):
+            file_name = self.get_problem_file_name(idx, problem)
+            exec_name = remove_affix(file_name, suffix=self.code_extension)
+            cmake.append(f"add_executable({exec_name} {file_name})")
         with open(os.path.join(project_path, "CMakeLists.txt"), "w") as f:
             f.write("\n".join(cmake))

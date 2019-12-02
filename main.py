@@ -120,9 +120,9 @@ def main():
             problems = [lchelper.utils.from_dict(lchelper.Problem, p) for p in cached_problems]
 
         for lang in args.lang:
-            codegen_class = lchelper.LANGUAGES[lang]
+            codegen = lchelper.create_codegen(lang)
             project_path = os.path.join(args.output, f"{contest_name}_{lang}")
-            codegen_class.create_project(project_path, problems, site)
+            codegen.create_project(project_path, problems, site)
             lchelper.log(f"Project in language '{lang}' stored at: {project_path}", "success")
 
 

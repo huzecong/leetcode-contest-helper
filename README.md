@@ -84,7 +84,7 @@ You can use your own template by modifying the `TEMPLATE_CODE` class variable in
 you should only do so if you understand what you're doing. Remember to keep the following parts intact:
 
 - Comments `// BEGIN *` and `// END *`. The code generator needs them to know where to insert generated code.
-- `struct TreeNode`, `const int NONE`, and `TreeNode *_construct_reee()`. These are required to handle tree inputs in
+- `struct TreeNode`, `const int NONE`, and `TreeNode *_construct_tree()`. These are required to handle tree inputs in
   LeetCode format.
 - `#include "testing.h"`. This include points to a tiny header-only library for testing your output.
 
