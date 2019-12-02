@@ -50,7 +50,7 @@ aims to do.
    ```bash
    python main.py get [-l <language>] <url-to-contest-page>
    ```
-   For instance, to generate testing code in C++ and Python (not supported yet) for
+   For instance, to generate testing code in C++ and Python for
    [Weekly Contest 163](https://leetcode.com/contest/weekly-contest-163), run the command:
    ```bash
    python main.py get -l cpp -l python -o projects/ https://leetcode.com/contest/weekly-contest-163
@@ -61,37 +61,52 @@ aims to do.
    - `weekly-contest-163_python`: Python code of problems in the contest.
 
 
-## Language-specific Instructions
+## Instructions for Using Generated Code
 
-Currently, only C++ is supported, but Python support is planned.
+The project folder will contain one code file for each problem, and potentially other files required for compiling or
+testing. Problems are renamed to single uppercase letters (in the same order as on the web page) for simplicity.
+
+The generated code contains a certain amount of boilerplate code for debugging. When submitting, remember to copy
+everything between the comments `BEGIN SUBMIT` and `END SUBMIT`.
+
+You can add your custom code template to the generated code. Currently, this is only possible through modifying the code
+for LCHelper:
+
+1. Find the code generator class for your language. The C++ generator is located in `lchelper/codegen/cpp.py`, and the
+   Python generator in `lchelper/codegen/python.py`.
+2. Add a property named `user_template_code`, and make it return you code template. The syntax looks like this:
+   ```python
+   @property
+   def user_template_code(self) -> str:
+       return r"""
+   template <typename ...Args>
+   void my_amazing_debug_function(Args ...args) {
+       // ...
+   }
+   """
+   ```
+   The property might already exist (it does in C++), in this case, feel free to replace it with your own.
+
+See below for language-specific instructions. Currently, only C++ and Python are supported.
 
 ### C++
 
-The generated C++ project builds using CMake. To setup the build system, run the following commands:
+The C++ project folder contains these additional files:
+
+- `CMakeLists.txt`, CMake configuration for building the project.
+- `_testing.h`, a header-only library for comparing outputs.
+- `_boilerplate.h`, boilerplate code for LeetCode-specific stuff.
+
+The generated C++ project builds using CMake. To compile the problems, run the following commands:
 ```bash
 cmake .
 make
 ./A  # to run tests for problem A
 ```
 You can also use IDEs (e.g., JetBrains CLion) to automate the process.
- 
-Note that problems are renamed to single uppercase letters (in the same order as on the web page) for simplicity.
-
-The generated code contains quite a lot of boilerplate code for debugging. When submitting, remember to copy everything
-between the lines `// BEGIN SUBMIT` and `// END SUBMIT`.
-
-You can use your own template by modifying the `TEMPLATE_CODE` class variable in the file `lchelper/codegen/cpp.py`, but
-you should only do so if you understand what you're doing. Remember to keep the following parts intact:
-
-- Comments `// BEGIN *` and `// END *`. The code generator needs them to know where to insert generated code.
-- `struct TreeNode`, `const int NONE`, and `TreeNode *_construct_tree()`. These are required to handle tree inputs in
-  LeetCode format.
-- `#include "testing.h"`. This include points to a tiny header-only library for testing your output.
 
 
 ## TODO
 
-- [ ] Python code generation
 - [ ] Automatic submission 
-- [ ] Customized code templates
 - [ ] Third-party login

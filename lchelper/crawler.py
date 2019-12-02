@@ -164,6 +164,7 @@ def get_problems(contest_url: str, site: str, cookie_path: str) -> List[Problem]
             statement = browser.find_element_by_css_selector(statement_css_selector).text
         examples = [
             elem.text for elem in browser.find_elements_by_css_selector("pre:not([class])") if elem.text]
+        # TODO: Should make sure C++ is selected!
         code = [elem.text for elem in browser.find_elements_by_css_selector(code_css_selector)]
         problem = Problem(problem_url, problem_name, statement, examples, code)
         parsed_problems.append(problem)
