@@ -3,7 +3,7 @@ import os
 from typing import List
 
 from selenium import webdriver
-from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as Expected
 from selenium.webdriver.support.wait import WebDriverWait
@@ -157,7 +157,7 @@ def get_problems(contest_url: str, site: str, cookie_path: str) -> List[Problem]
             statement_css_selector = "div.question-content"
             code_css_selector = "pre.CodeMirror-line"
             statement = browser.find_element_by_css_selector(statement_css_selector).text
-        except TimeoutException:
+        except (TimeoutException, NoSuchElementException):
             # Page after contest; statement and editor in vertically split panes.
             statement_css_selector = "div[data-key='description-content'] div.content__1Y2H"
             code_css_selector = "div.monaco-scrollable-element div.view-line"

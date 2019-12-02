@@ -27,6 +27,14 @@ class PythonCodeGen(CodeGen):
     @property
     def template_code(self) -> str:
         return r"""
+from typing import *
+
+class TreeNode:
+     def __init__(self, x):
+         self.val = x
+         self.left = None
+         self.right = None
+
 # BEGIN SUBMIT
 
 # BEGIN USER TEMPLATE
@@ -42,14 +50,6 @@ class PythonCodeGen(CodeGen):
 # BEGIN STATEMENT
 
 # END STATEMENT
-
-from typing import List, Optional
-
-class TreeNode:
-     def __init__(self, x):
-         self.val = x
-         self.left = None
-         self.right = None
 
 
 def _construct_tree(parent: List[Optional[int]], idx: int = 0) -> Optional[TreeNode]:
@@ -79,11 +79,11 @@ def test(msg: str, a, b):
         "string": "str",
     }
 
-    def _convert_cpp_type_to_py(self, type_name: str) -> str:
+    def _convert_cpp_type(self, type_name: str) -> str:
         type_name = type_name.strip().rstrip("*&")
         if type_name.startswith("vector<") and type_name.endswith(">"):
             inner_type_name = type_name[len("vector<"):-len(">")]
-            return f"List[{self._convert_cpp_type_to_py(inner_type_name)}]"
+            return f"List[{self._convert_cpp_type(inner_type_name)}]"
         return self.TYPE_MAP.get(type_name, type_name)
 
     def generate_solution_code(self, signature: Signature) -> Code:
@@ -95,7 +95,7 @@ def test(msg: str, a, b):
             functions = [signature.function]
         fn_codes = []
         for func_sig in functions:
-            args = ", ".join(f"{arg_name}: {self._convert_cpp_type_to_py(arg_type)}"
+            args = ", ".join(f"{arg_name}: {self._convert_cpp_type(arg_type)}"
                              for arg_type, arg_name in func_sig.arguments)
             if func_sig.name == class_name:
                 fn_code = [
@@ -103,7 +103,7 @@ def test(msg: str, a, b):
                     f"        pass"]
             else:
                 fn_code = [
-                    f"    def {func_sig.name}(self, {args}) -> {self._convert_cpp_type_to_py(func_sig.return_type)}:",
+                    f"    def {func_sig.name}(self, {args}) -> {self._convert_cpp_type(func_sig.return_type)}:",
                     f"        pass"]
             fn_codes.append(fn_code)
         code = [f"class {class_name}:"] + self.list_join(fn_codes, [""])
@@ -128,7 +128,7 @@ def test(msg: str, a, b):
             return f"_construct_tree([{', '.join('None' if x is None else str(x) for x in parent)}])"
 
         def to_val(val: Any, type_name: str) -> str:
-            if type_name == "TreeNode":
+            if self._convert_cpp_type(type_name) == "TreeNode":
                 return to_tree(val)
             return to_str(val)
 
