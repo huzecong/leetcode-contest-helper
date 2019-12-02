@@ -1,7 +1,6 @@
 import unittest
 from typing import Union
 
-from lchelper.codegen.cpp import generate_code
 from lchelper.parser import parse_problem
 from lchelper.common import FunctionSignature, Example, ProblemSignature, Interaction, \
     InteractiveProblemSignature, Problem
@@ -34,9 +33,10 @@ class ParseTest(unittest.TestCase):
                 assert parsed_signature.examples[idx].input == signature.examples[idx].input
                 assert parsed_signature.examples[idx].output == signature.examples[idx].output
 
-        solution_code, test_code = generate_code(problem, signature)
-        print(solution_code)
-        print(test_code)
+        # from lchelper.codegen.cpp import generate_code
+        # solution_code, test_code = generate_code(problem, signature)
+        # print(solution_code)
+        # print(test_code)
 
     def test_parse_problem_1(self):
         problem = Problem(
