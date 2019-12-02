@@ -106,7 +106,17 @@ make
 You can also use IDEs (e.g., JetBrains CLion) to automate the process.
 
 
+## Disclaimer
+
+- This tool is not affiliated, associated, authorized, endorsed by, or in any way officially connected with LeetCode.
+- This tool is not guaranteed to generate correct code, although the author tried their best to prevent such cases.
+- This tool is not (and will not be) capable of automatically generating solutions.
+- This tool does not grant you access to premium LeetCode problems that you cannot view with your personal account.
+- Passing test cases within the generated code does not guarantee the correctness of your solution.
+
+
 ## TODO
 
 - [ ] Automatic submission 
 - [ ] Third-party login
+- [ ] Interactive problems with a query class
