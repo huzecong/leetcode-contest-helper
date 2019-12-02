@@ -1,5 +1,6 @@
 from .base import CodeGen
 from .cpp import CppCodeGen
+from .python import PythonCodeGen
 
 __all__ = [
     "create_codegen",
@@ -13,4 +14,5 @@ def create_codegen(lang: str) -> CodeGen:
 
 LANGUAGES = {
     "cpp": CppCodeGen,
+    "python": PythonCodeGen,
 }

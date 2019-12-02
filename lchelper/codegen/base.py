@@ -27,12 +27,11 @@ class CodeGen(abc.ABC):
         raise NotImplementedError
 
     @property
-    @abc.abstractmethod
     def extra_files(self) -> Dict[str, str]:
         r"""Extra files that will be written verbatim under the project folder. The returned dictionary maps file names
         to raw code.
         """
-        raise NotImplementedError
+        return {}
 
     @property
     @abc.abstractmethod
