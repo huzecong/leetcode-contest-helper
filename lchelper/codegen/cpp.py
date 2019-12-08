@@ -132,6 +132,35 @@ TreeNode *_construct_tree(const vector<int> &parent, int idx = 0) {
     root->right = _construct_tree(parent, idx * 2 + 2);
     return root;
 }
+
+#ifdef LEETCODE_LOCAL
+template <typename T>
+void print(T *a, int n) {
+    for (int i = 1; i < n; ++i)
+        std::cout << a[i] << " ";
+    std::cout << a[n] << std::endl;
+}
+
+#define PRINT(__l, __r, __s, __t) {                     \
+    std::cout << #__l #__s << "~" << #__t #__r << ": "; \
+    for (auto __i = __s; __i != __t; ++__i)             \
+        std::cout << __l __i __r << " ";                \
+    std::cout << std::endl;                             \
+}
+
+template <typename ...Args>
+void debug(Args ...args);
+
+template <>
+void debug() { std::cout << std::endl; }
+
+template <typename T, typename ...Args>
+void debug(const T &x, Args ...args) {
+    print(x);
+    std::cout << " ";
+    debug(args...);
+}
+#endif  // LEETCODE_LOCAL
 """,
         }
 
@@ -168,35 +197,6 @@ TreeNode *_construct_tree(const vector<int> &parent, int idx = 0) {
 # define print(...)
 # define PRINT(...)
 # define debug(...)
-#endif  // LEETCODE_LOCAL
-
-#ifdef LEETCODE_LOCAL
-template <typename T>
-void print(T *a, int n) {
-    for (int i = 1; i < n; ++i)
-        std::cout << a[i] << " ";
-    std::cout << a[n] << std::endl;
-}
-
-#define PRINT(__l, __r, __s, __t) {                     \
-    std::cout << #__l #__s << "~" << #__t #__r << ": "; \
-    for (auto __i = __s; __i != __t; ++__i)             \
-        std::cout << __l __i __r << " ";                \
-    std::cout << std::endl;                             \
-}
-
-template <typename ...Args>
-void debug(Args ...args);
-
-template <>
-void debug() { std::cout << std::endl; }
-
-template <typename T, typename ...Args>
-void debug(const T &x, Args ...args) {
-    print(x);
-    std::cout << " ";
-    debug(args...);
-}
 #endif  // LEETCODE_LOCAL
 
 typedef long long ll;
