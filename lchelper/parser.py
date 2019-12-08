@@ -2,6 +2,7 @@ import json
 from typing import Any, Dict, List, Tuple, Union
 
 from lchelper.common import *
+from lchelper.logging import log
 
 __all__ = [
     "parse_problem",
@@ -94,9 +95,11 @@ def parse_problem(problem: Problem, site: str = "leetcode") -> Union[ProblemSign
 
             functions, input_str = parse_value(input_str)
             arg_vals, input_str = parse_value(input_str)
-            assert len(input_str) == 0
+            if len(input_str) > 0:
+                log(f"Problem \"{problem.name}\": Extra characters in example input section: {input_str}", "warning")
             ret_vals, output_str = parse_value(output_str)
-            assert len(output_str) == 0
+            if len(output_str) > 0:
+                log(f"Problem \"{problem.name}\": Extra characters in example output section: {output_str}", "warning")
 
             cur_examples = [
                 Interaction(
@@ -127,17 +130,19 @@ def parse_problem(problem: Problem, site: str = "leetcode") -> Union[ProblemSign
                 if idx > 0 and input_str.startswith(","):
                     input_str = input_str[1:].strip()
                 if idx == 0:
-                    if input_str.startswith(f"{name} = "):
-                        input_str = input_str[len(f"{name} = "):].strip()
+                    if input_str.startswith(f"{name} ="):
+                        input_str = input_str[len(f"{name} ="):].strip()
                 else:
-                    assert input_str.startswith(f"{name} = ")
-                    input_str = input_str[len(f"{name} = "):].strip()
+                    assert input_str.startswith(f"{name} =")
+                    input_str = input_str[len(f"{name} ="):].strip()
                 input_val, input_str = parse_value(input_str)
                 input_vals[name] = input_val
-            assert len(input_str) == 0
+            if len(input_str) > 0:
+                log(f"Problem \"{problem.name}\": Extra characters in example input section:\n{input_str}", "warning")
 
             output_val, output_str = parse_value(output_str)
-            assert len(output_str) == 0
+            if len(output_str) > 0:
+                log(f"Problem \"{problem.name}\": Extra characters in example output section:\n{output_str}", "warning")
 
             examples.append(Example(input_vals, output_val))
 
