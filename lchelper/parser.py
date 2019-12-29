@@ -17,10 +17,15 @@ def parse_vardef(s: str) -> Tuple[str, str]:
     :return: A tuple of (type, name).
     """
     s = s.strip()
-    type_end = next((idx for idx in range(len(s) - 1, -1, -1) if not s[idx].isidentifier()), -1)
-    # In case there's no type (e.g., constructor), `type_end` will be -1, so `type_name` will be empty string.
-    identifier = s[(type_end + 1):].strip()
-    type_name = s[:(type_end + 1)].strip()
+    ident_start = next((idx for idx in range(len(s)) if s[idx:].isidentifier()), 0)
+    # Identifier is the longest suffix that is a valid identifier.
+    # If the entire definition is an identifier, it's a constructor and we count it as the type name.
+    if ident_start == 0:
+        type_name = s
+        identifier = ""
+    else:
+        type_name = s[:ident_start].strip()
+        identifier = s[ident_start:].strip()
     return type_name, identifier
 
 

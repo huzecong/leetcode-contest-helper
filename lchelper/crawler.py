@@ -128,7 +128,7 @@ def get_problems(contest_url: str, site: str, cookie_path: str) -> List[Problem]
     options.add_argument("headless")
     browser = webdriver.Chrome(options=options)
     browser.set_window_position(0, 0)
-    browser.set_window_size(1920, 600)  # a wide enough window so code does not get wrapped
+    browser.set_window_size(3840, 600)  # a wide enough window so code does not get wrapped
     browser.implicitly_wait(10)
 
     log("Loading LeetCode contest page...")
