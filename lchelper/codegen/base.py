@@ -1,6 +1,7 @@
 import abc
 import os
 import shutil
+import traceback
 from datetime import datetime
 from typing import Dict, Iterable, List, Tuple, TypeVar, Union
 
@@ -180,18 +181,22 @@ class CodeGen(abc.ABC):
 
         signatures = []
         for idx, problem in enumerate(problems):
-            problem_signature = parse_problem(problem, site)
-            signatures.append(problem_signature)
-            solution_code, test_code = self.generate_code(problem, problem_signature)
-            problem_code = self.replace_section(template, {
-                "SOLUTION CLASS": solution_code,
-                "TEST": test_code,
-            })
-            if problem.statement != "":
-                statement = self.format_statement(problem)
-                problem_code = self.replace_section(problem_code, {"STATEMENT": statement}, ignore_errors=True)
-            code_path = os.path.join(project_path, self.get_problem_file_name(idx, problem))
-            self.write_and_backup(code_path, "\n".join(problem_code) + "\n")
+            try:
+                problem_signature = parse_problem(problem, site)
+                signatures.append(problem_signature)
+                solution_code, test_code = self.generate_code(problem, problem_signature)
+                problem_code = self.replace_section(template, {
+                    "SOLUTION CLASS": solution_code,
+                    "TEST": test_code,
+                })
+                if problem.statement != "":
+                    statement = self.format_statement(problem)
+                    problem_code = self.replace_section(problem_code, {"STATEMENT": statement}, ignore_errors=True)
+                code_path = os.path.join(project_path, self.get_problem_file_name(idx, problem))
+                self.write_and_backup(code_path, "\n".join(problem_code) + "\n")
+            except Exception as e:
+                traceback.print_exc()
+                log(f"Exception occurred while processing \"{problem.name}\"", "error")
 
         for tmpl_name, tmpl_code in self.extra_files.items():
             with open(os.path.join(project_path, tmpl_name), "w") as f:

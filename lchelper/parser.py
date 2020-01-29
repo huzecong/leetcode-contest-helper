@@ -75,7 +75,10 @@ def parse_problem(problem: Problem, site: str = "leetcode") -> Union[ProblemSign
         r"""Find the part in the example that is between two tags. If ``next_tag`` does not exist, then find the part
         until the end.
         """
-        start_pos = s.find(cur_tag) + len(cur_tag)
+        start_pos = s.find(cur_tag)
+        if start_pos == -1:
+            raise ValueError
+        start_pos += len(cur_tag)
         if s[start_pos] == colon:
             start_pos += 1
         end_pos = s.find(next_tag, start_pos)
@@ -91,12 +94,12 @@ def parse_problem(problem: Problem, site: str = "leetcode") -> Union[ProblemSign
         func_map: Dict[str, FunctionSignature] = {signature.name: signature for signature in func_signatures}
         examples: List[List[Interaction]] = []
         for example in problem.examples:
-            if site == "leetcode":
-                input_str = find_example_section(example, "Input", "Output")
-                output_str = find_example_section(example, "Output", "Explanation")
-            else:  # site == "leetcode-cn"
+            try:
                 input_str = find_example_section(example, "输入", "输出", "：")
                 output_str = find_example_section(example, "输出", "解释", "：")
+            except ValueError:
+                input_str = find_example_section(example, "Input", "Output")
+                output_str = find_example_section(example, "Output", "Explanation")
 
             functions, input_str = parse_value(input_str)
             arg_vals, input_str = parse_value(input_str)
@@ -123,12 +126,12 @@ def parse_problem(problem: Problem, site: str = "leetcode") -> Union[ProblemSign
         func_signature = func_signatures[0]
         examples: List[Example] = []
         for example in problem.examples:
-            if site == "leetcode":
-                input_str = find_example_section(example, "Input", "Output")
-                output_str = find_example_section(example, "Output", "Explanation")
-            else:  # site == "leetcode-cn"
+            try:
                 input_str = find_example_section(example, "输入", "输出", "：")
                 output_str = find_example_section(example, "输出", "解释", "：")
+            except ValueError:
+                input_str = find_example_section(example, "Input", "Output")
+                output_str = find_example_section(example, "Output", "Explanation")
 
             input_vals = {}
             for idx, (_, name) in enumerate(func_signature.arguments):
