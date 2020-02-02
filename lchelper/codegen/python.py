@@ -52,12 +52,28 @@ class TreeNode:
 # END STATEMENT
 
 
-def _construct_tree(parent: List[Optional[int]], idx: int = 0) -> Optional[TreeNode]:
-    if idx >= len(parent) or parent[idx] is None:
-        return None
-    root = TreeNode(parent[idx])
-    root.left = _construct_tree(parent, idx * 2)
-    root.right = _construct_tree(parent, idx * 2 + 1)
+def _construct_tree(parent: List[Optional[int]]) -> Optional[TreeNode]:
+    from queue import Queue
+    q: 'Queue[TreeNode]' = Queue()
+    ptr = 0
+
+    def _add_node() -> Optional[TreeNode]:
+        nonlocal ptr
+        if ptr >= len(parent):
+            return None
+        val = parent[ptr]
+        ptr += 1
+        if val is None:
+            return None
+        p = TreeNode(val)
+        q.put(p)
+        return p
+
+    root = _add_node()
+    while not q.empty():
+        p = q.get()
+        p.left = _add_node()
+        p.right = _add_node()
     return root
 
 
@@ -170,11 +186,11 @@ def test(msg: str, a, b):
                                 assign(ret_ans_var, to_val(ex.output, func_sig.return_type)),
                                 assign(ret_name, f"{instance_name}.{call(ex.function, args)}"),
                                 call("test", [to_str(f"{problem.name} - Example {idx} - Interaction {ex_idx}"),
-                                              ret_ans_var, ret_name]) + ";",
+                                              ret_ans_var, ret_name]),
                             ]
                             statements.extend(stmts)
                         else:
-                            stmt = call(ex.function, args) + ";"
+                            stmt = call(ex.function, args)
                             statements.append(stmt)
                 test_fn = [
                     f"def test_example_{idx}():",
@@ -201,7 +217,7 @@ def test(msg: str, a, b):
                 stmts = [
                     assign(ret_ans_var, to_val(example.output, func_sig.return_type)),
                     assign(ret_name, f"{instance_name}.{call(func_sig.name, args)}"),
-                    call("test", [to_str(f"{problem.name} - Example {idx}"), ret_ans_var, ret_name]) + ";",
+                    call("test", [to_str(f"{problem.name} - Example {idx}"), ret_ans_var, ret_name]),
                 ]
                 statements.extend(stmts)
 

@@ -125,11 +125,27 @@ struct TreeNode {
 
 const int NONE = INT_MIN;
 
-TreeNode *_construct_tree(const vector<int> &parent, int idx = 0) {
-    if (idx >= parent.size() || parent[idx] == NONE) return NULL;
-    TreeNode *root = new TreeNode(parent[idx]);
-    root->left = _construct_tree(parent, idx * 2 + 1);
-    root->right = _construct_tree(parent, idx * 2 + 2);
+TreeNode *_construct_tree(const vector<int> &parent) {
+    queue<TreeNode *> q;
+    int ptr = 0;
+
+    auto _add_node = [&]() -> TreeNode * {
+        if (ptr >= parent.size()) return nullptr;
+        int val = parent[ptr++];
+        if (val == NONE) return nullptr;
+        auto *p = new TreeNode(val);
+        q.push(p);
+        return p;
+    };
+
+    TreeNode *root = _add_node();
+    while (!q.empty()) {
+        if (ptr >= parent.size()) break;
+        TreeNode *p = q.front();
+        q.pop();
+        p->left = _add_node();
+        p->right = _add_node();
+    }
     return root;
 }
 
