@@ -30,10 +30,10 @@ class PythonCodeGen(CodeGen):
 from typing import *
 
 class TreeNode:
-     def __init__(self, x):
-         self.val = x
-         self.left = None
-         self.right = None
+    def __init__(self, x):
+        self.val = x
+        self.left = None
+        self.right = None
 
 # BEGIN SUBMIT
 
@@ -77,7 +77,7 @@ def _construct_tree(parent: List[Optional[int]]) -> Optional[TreeNode]:
     return root
 
 
-def test(msg: str, a, b):
+def evaluate(msg: str, a, b):
     if a == b:
         print(f"{msg} [OK]")
     else:
@@ -185,7 +185,7 @@ def test(msg: str, a, b):
                             stmts = [
                                 assign(ret_ans_var, to_val(ex.output, func_sig.return_type)),
                                 assign(ret_name, f"{instance_name}.{call(ex.function, args)}"),
-                                call("test", [to_str(f"{problem.name} - Example {idx} - Interaction {ex_idx}"),
+                                call("evaluate", [to_str(f"{problem.name} - Example {idx} - Interaction {ex_idx}"),
                                               ret_ans_var, ret_name]),
                             ]
                             statements.extend(stmts)
@@ -193,13 +193,13 @@ def test(msg: str, a, b):
                             stmt = call(ex.function, args)
                             statements.append(stmt)
                 test_fn = [
-                    f"def test_example_{idx}():",
+                    f"def eval_example_{idx}():",
                     *["    " + line for line in statements]]
                 test_functions.append(test_fn)
 
             main_code = [
                 "def main():",
-                *["    " + f"test_example_{idx}()" for idx in range(len(signature.examples))],
+                *["    " + f"eval_example_{idx}()" for idx in range(len(signature.examples))],
                 "",
                 "",
                 "if __name__ == '__main__':",
@@ -217,19 +217,19 @@ def test(msg: str, a, b):
                 stmts = [
                     assign(ret_ans_var, to_val(example.output, func_sig.return_type)),
                     assign(ret_name, f"{instance_name}.{call(func_sig.name, args)}"),
-                    call("test", [to_str(f"{problem.name} - Example {idx}"), ret_ans_var, ret_name]),
+                    call("evaluate", [to_str(f"{problem.name} - Example {idx}"), ret_ans_var, ret_name]),
                 ]
                 statements.extend(stmts)
 
                 test_fn = [
-                    f"def test_example_{idx}(_sol: Solution):",
+                    f"def eval_example_{idx}(_sol: Solution):",
                     *["    " + line for line in statements]]
                 test_functions.append(test_fn)
 
             main_code = [
                 "def main():",
                 "    _sol = Solution()",
-                *[f"    test_example_{idx}(_sol)" for idx in range(len(signature.examples))],
+                *[f"    eval_example_{idx}(_sol)" for idx in range(len(signature.examples))],
                 "",
                 "",
                 "if __name__ == '__main__':",

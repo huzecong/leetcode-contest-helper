@@ -92,6 +92,7 @@ inline void test(const char *msg, const T &a, const T &b) {
 #include <map>
 #include <numeric>
 #include <queue>
+#include <random>
 #include <set>
 #include <stack>
 #include <string>
@@ -217,8 +218,17 @@ void debug(const T &x, Args ...args) {
 
 typedef long long ll;
 typedef unsigned int uint;
+
 template <class T>
-using heap = priority_queue<T, vector<T>, greater<T>>;
+struct _greater : less<T> {
+    inline bool operator() (const T& x, const T& y) const {
+        return less<T>::operator()(y, x);
+    }
+};
+template <class T>
+using min_heap = priority_queue<T, vector<T>, _greater<T>>;
+template <class T>
+using max_heap = priority_queue<T, vector<T>, less<T>>;
 
 inline double runtime() {
     return (double)clock() / CLOCKS_PER_SEC;

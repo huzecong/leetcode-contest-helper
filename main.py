@@ -38,6 +38,9 @@ def parse_args():
                             help="Do not use cached problem descriptions when generating code")
     parser_get.add_argument("-o", "--output", dest="output", default="./",
                             help="The path to store generated projects")
+    parser_get.add_argument("-p", "--prefix", dest="prefix", default=None,
+                            help="Prefix for project folders, if not specified, the contest name (e.g. "
+                                 "\"weekly-contest-162\") if used")
     parser_get.add_argument("url", help="URL to the contest page, or the contest name (e.g. \"weekly-contest-162\")")
 
     args = parser.parse_args()
@@ -121,7 +124,7 @@ def main():
 
         for lang in args.lang:
             codegen = lchelper.create_codegen(lang)
-            project_path = os.path.join(args.output, f"{contest_name}_{lang}")
+            project_path = os.path.join(args.output, f"{(args.prefix or contest_name)}_{lang}")
             codegen.create_project(project_path, problems, site)
             lchelper.log(f"Project in language '{lang}' stored at: {project_path}", "success")
 
