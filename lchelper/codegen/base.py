@@ -165,13 +165,15 @@ class CodeGen(abc.ABC):
             statement.extend(comments)
         return statement
 
-    def create_project(self, project_path: str, problems: List[Problem], site: str) -> None:
+    def create_project(self, project_path: str, problems: List[Problem], site: str, debug: bool = False) -> None:
         r"""Create the folder for the project and generate code and supporting files.
 
         :param project_path: Path to the project folder.
         :param problems: List of problem descriptions to generate code for.
         :param site: The LeetCode site where problems are crawled. Different sites may have slightly different syntax
             (or language-dependent markings).
+        :param debug: If ``True``, exceptions will not be caught. This is probably only useful when the ``--debug``
+            flag is set, in which case the Python debugger is hooked to handle exceptions.
         """
         if not os.path.exists(project_path):
             os.makedirs(project_path)
@@ -194,7 +196,9 @@ class CodeGen(abc.ABC):
                     problem_code = self.replace_section(problem_code, {"STATEMENT": statement}, ignore_errors=True)
                 code_path = os.path.join(project_path, self.get_problem_file_name(idx, problem))
                 self.write_and_backup(code_path, "\n".join(problem_code) + "\n")
-            except Exception as e:
+            except Exception:
+                if debug:
+                    raise
                 traceback.print_exc()
                 log(f"Exception occurred while processing \"{problem.name}\"", "error")
 

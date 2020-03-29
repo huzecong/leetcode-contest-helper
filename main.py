@@ -125,7 +125,7 @@ def main():
         for lang in args.lang:
             codegen = lchelper.create_codegen(lang)
             project_path = os.path.join(args.output, f"{(args.prefix or contest_name)}_{lang}")
-            codegen.create_project(project_path, problems, site)
+            codegen.create_project(project_path, problems, site, debug=args.debug)
             lchelper.log(f"Project in language '{lang}' stored at: {project_path}", "success")
 
 
