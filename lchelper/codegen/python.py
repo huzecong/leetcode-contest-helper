@@ -93,6 +93,11 @@ def evaluate(msg: str, a, b):
 
     TYPE_MAP = {
         "string": "str",
+        "double": "float",
+        "long long": "int",
+        "unsigned int": "int",
+        "unsigned long long": "int",
+        "void": "None",
     }
 
     def _convert_cpp_type(self, type_name: str) -> str:
@@ -111,15 +116,15 @@ def evaluate(msg: str, a, b):
             functions = [signature.function]
         fn_codes = []
         for func_sig in functions:
-            args = ", ".join(f"{arg_name}: {self._convert_cpp_type(arg_type)}"
-                             for arg_type, arg_name in func_sig.arguments)
+            args = "".join(f", {arg_name}: {self._convert_cpp_type(arg_type)}"
+                           for arg_type, arg_name in func_sig.arguments)
             if func_sig.name == class_name:
                 fn_code = [
-                    f"    def __init__(self, {args}):",
+                    f"    def __init__(self{args}):",
                     f"        pass"]
             else:
                 fn_code = [
-                    f"    def {func_sig.name}(self, {args}) -> {self._convert_cpp_type(func_sig.return_type)}:",
+                    f"    def {func_sig.name}(self{args}) -> {self._convert_cpp_type(func_sig.return_type)}:",
                     f"        pass"]
             fn_codes.append(fn_code)
         code = [f"class {class_name}:"] + self.list_join(fn_codes, [""])
@@ -180,17 +185,17 @@ def evaluate(msg: str, a, b):
                         statements.append(ctor_stmt)
                     else:
                         ret_name = f"_ret{ex_idx}"
-                        if func_sig.return_type is not None:
+                        if func_sig.return_type != "void":
                             ret_ans_var = f"_ret_ans{ex_idx}"
                             stmts = [
                                 assign(ret_ans_var, to_val(ex.output, func_sig.return_type)),
                                 assign(ret_name, f"{instance_name}.{call(ex.function, args)}"),
                                 call("evaluate", [to_str(f"{problem.name} - Example {idx} - Interaction {ex_idx}"),
-                                              ret_ans_var, ret_name]),
+                                                  ret_ans_var, ret_name]),
                             ]
                             statements.extend(stmts)
                         else:
-                            stmt = call(ex.function, args)
+                            stmt = f"{instance_name}.{call(ex.function, args)}"
                             statements.append(stmt)
                 test_fn = [
                     f"def eval_example_{idx}():",

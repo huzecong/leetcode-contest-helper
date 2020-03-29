@@ -317,7 +317,7 @@ inline double runtime() {
                         statements.append(ctor_stmt)
                     else:
                         ret_name = f"_ret{ex_idx}"
-                        if func_sig.return_type is not None:
+                        if func_sig.return_type != "void":
                             ret_ans_var = f"_ret_ans{ex_idx}"
                             stmts = [
                                 decl_assign(func_sig.return_type, ret_ans_var, to_val(ex.output, func_sig.return_type)),
@@ -328,7 +328,7 @@ inline double runtime() {
                             ]
                             statements.extend(stmts)
                         else:
-                            stmt = call(ex.function, args) + ";"
+                            stmt = f"{instance_name}.{call(ex.function, args)};"
                             statements.append(stmt)
                 declarations = defaultdict(list)
                 for func_sig in signature.functions:

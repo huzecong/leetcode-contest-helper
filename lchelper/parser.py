@@ -22,7 +22,7 @@ def parse_vardef(s: str) -> Tuple[str, str]:
     # If the entire definition is an identifier, it's a constructor and we count it as the type name.
     if ident_start == 0:
         type_name = s
-        identifier = ""
+        identifier = s
     else:
         type_name = s[:ident_start].strip()
         identifier = s[ident_start:].strip()
@@ -48,7 +48,7 @@ def find_functions(code: List[str]) -> Tuple[str, List[FunctionSignature]]:
             bracket_pos = line.find("(")
             return_type, func_name = parse_vardef(line[:bracket_pos])
             args_str = line[(bracket_pos + 1):line.find(")")].split(",")
-            arguments = [parse_vardef(s) for s in args_str]
+            arguments = [parse_vardef(s) for s in args_str if s]
             signatures.append(FunctionSignature(func_name, arguments, return_type))
     return class_name, signatures
 
