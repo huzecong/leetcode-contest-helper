@@ -125,7 +125,7 @@ def parse_problem(problem: Problem, site: str = "leetcode") -> Union[ProblemSign
 
         func_signature = func_signatures[0]
         examples: List[Example] = []
-        for example in problem.examples:
+        for ex_id, example in enumerate(problem.examples):
             try:
                 input_str = find_example_section(example, "输入", "输出", "：")
                 output_str = find_example_section(example, "输出", "解释", "：")
@@ -137,12 +137,17 @@ def parse_problem(problem: Problem, site: str = "leetcode") -> Union[ProblemSign
             for idx, (_, name) in enumerate(func_signature.arguments):
                 if idx > 0 and input_str.startswith(","):
                     input_str = input_str[1:].strip()
-                if idx == 0:
-                    if input_str.startswith(f"{name} ="):
-                        input_str = input_str[len(f"{name} ="):].strip()
-                else:
-                    assert input_str.startswith(f"{name} =")
-                    input_str = input_str[len(f"{name} ="):].strip()
+                if input_str[0].isidentifier():
+                    ident_end = next((idx for idx in range(1, len(input_str))
+                                      if not input_str[:idx].isidentifier()), len(input_str) + 1) - 1
+                    ident = input_str[:ident_end]
+                    if ident != name:
+                        log(f"Problem \"{problem.name}\": Argument {idx + 1} should be `{name}`, "
+                            f"but `{ident}` found in example {ex_id + 1}", "warning")
+                    assert input_str.startswith(f"{ident} =")
+                    input_str = input_str[len(f"{ident} ="):].strip()
+                elif idx != 0:
+                    log(f"Problem \"{problem.name}\": Argument {idx + 1} is unnamed in example {ex_id + 1}", "warning")
                 input_val, input_str = parse_value(input_str)
                 input_vals[name] = input_val
             if len(input_str) > 0:
