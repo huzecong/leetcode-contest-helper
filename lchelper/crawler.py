@@ -171,6 +171,6 @@ def get_problems(contest_url: str, site: str, cookie_path: str) -> List[Problem]
         log(f"Parsed problem ({idx + 1}/{len(problem_paths)}): {problem_name}")
 
     browser.quit()
-    log("All problems successfully parsed", "success")
+    log("All problems successfully crawled", "success")
 
     return parsed_problems

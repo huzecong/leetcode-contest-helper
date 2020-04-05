@@ -1,9 +1,42 @@
 import unittest
-from typing import Union
+from typing import Union, Dict, Optional, List
 
-from lchelper.parser import parse_problem
+import lchelper.codegen
 from lchelper.common import FunctionSignature, Example, ProblemSignature, Interaction, \
     InteractiveProblemSignature, Problem
+
+
+class EndToEndTest(unittest.TestCase):
+    def _test_problem_set(self, url: str, site: str = "leetcode", ignore_problems: Optional[List[int]] = None):
+        available_users = [user for user in lchelper.get_users() if user.site == site]
+        assert len(available_users) > 0, f"User cookie from site \"{site}\" required for end-to-end tests"
+        user = available_users[0]
+        problems = lchelper.get_problems(url, site, lchelper.get_cookie_path(user.username, user.site))
+        codegen: Dict[str, lchelper.codegen.CodeGen] = {
+            lang: codegen_klass()
+            for lang, codegen_klass in lchelper.LANGUAGES.items()
+        }
+
+        ignore_problems = ignore_problems or []
+        for idx, problem in enumerate(problems):
+            if idx in ignore_problems:
+                continue
+            problem_signature = lchelper.parse_problem(problem, site)
+            for lang, gen in codegen.items():
+                _, _ = gen.generate_code(problem, problem_signature)
+
+    def test_contests(self):
+        contests = [
+            ("weekly-contest-183", []),
+            ("weekly-contest-182", []),
+            ("weekly-contest-181", []),
+            ("weekly-contest-180", []),
+            ("weekly-contest-163", []),
+            ("biweekly-contest-14", []),
+        ]
+        for contest, ignore_problems in contests:
+            url = f"https://leetcode.com/contest/{contest}"
+            self._test_problem_set(url, ignore_problems=ignore_problems)
 
 
 class ParseTest(unittest.TestCase):
@@ -13,7 +46,7 @@ class ParseTest(unittest.TestCase):
         assert parsed_function.arguments == function.arguments
 
     def _test_parse_problem(self, problem: Problem, signature: Union[ProblemSignature, InteractiveProblemSignature]):
-        parsed_signature = parse_problem(problem)
+        parsed_signature = lchelper.parse_problem(problem)
         assert type(parsed_signature) is type(signature)
         if isinstance(signature, InteractiveProblemSignature):
             assert parsed_signature.class_name == signature.class_name
@@ -141,7 +174,7 @@ class ParseTest(unittest.TestCase):
             class_name="FindElements",
             functions=[
                 FunctionSignature(
-                    return_type="", name="FindElements",
+                    return_type="FindElements", name="FindElements",
                     arguments=[("TreeNode*", "root")]),
                 FunctionSignature(
                     return_type="bool", name="find",

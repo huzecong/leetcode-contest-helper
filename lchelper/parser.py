@@ -71,19 +71,24 @@ def parse_problem(problem: Problem, site: str = "leetcode") -> Union[ProblemSign
     r"""Parse the problem given the raw contents crawled from the web.
     """
 
-    def find_example_section(s: str, cur_tag: str, next_tag: str, colon: str = ":") -> str:
+    def find_example_section(s: str, cur_tag: str, next_tag: str, colon: str = ":", ignore_error: bool = False) -> str:
         r"""Find the part in the example that is between two tags. If ``next_tag`` does not exist, then find the part
         until the end.
         """
         start_pos = s.find(cur_tag)
         if start_pos == -1:
-            raise ValueError
-        start_pos += len(cur_tag)
-        if s[start_pos] == colon:
-            start_pos += 1
+            if not ignore_error:
+                raise ValueError
+            start_pos = 0
+        else:
+            start_pos += len(cur_tag)
+            if s[start_pos] == colon:
+                start_pos += 1
         end_pos = s.find(next_tag, start_pos)
         if end_pos == -1:
-            return s[start_pos:].strip()
+            if not ignore_error:
+                raise ValueError
+            end_pos = len(s)
         return s[start_pos:end_pos].strip()
 
     # Parse function signature from code.
@@ -98,8 +103,8 @@ def parse_problem(problem: Problem, site: str = "leetcode") -> Union[ProblemSign
                 input_str = find_example_section(example, "输入", "输出", "：")
                 output_str = find_example_section(example, "输出", "解释", "：")
             except ValueError:
-                input_str = find_example_section(example, "Input", "Output")
-                output_str = find_example_section(example, "Output", "Explanation")
+                input_str = find_example_section(example, "Input", "Output", ignore_error=True)
+                output_str = find_example_section(example, "Output", "Explanation", ignore_error=True)
 
             functions, input_str = parse_value(input_str)
             arg_vals, input_str = parse_value(input_str)
@@ -130,8 +135,8 @@ def parse_problem(problem: Problem, site: str = "leetcode") -> Union[ProblemSign
                 input_str = find_example_section(example, "输入", "输出", "：")
                 output_str = find_example_section(example, "输出", "解释", "：")
             except ValueError:
-                input_str = find_example_section(example, "Input", "Output")
-                output_str = find_example_section(example, "Output", "Explanation")
+                input_str = find_example_section(example, "Input", "Output", ignore_error=True)
+                output_str = find_example_section(example, "Output", "Explanation", ignore_error=True)
 
             input_vals = {}
             for idx, (_, name) in enumerate(func_signature.arguments):
