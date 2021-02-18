@@ -55,7 +55,7 @@ def main():
         lchelper.utils.register_excepthook()
 
     if args.command == "login":
-        print(f"Logging in using account '{args.username}'. Please enter your password in the browser window.")
+        print(f"Logging in using account '{args.username}'...")
         lchelper.update_cookie(args.username, args.site)
         print(f"Cookies for user '{args.username}' saved.")
 

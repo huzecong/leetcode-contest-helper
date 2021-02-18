@@ -44,10 +44,12 @@ def check_login(browser, site: str, timeout: int = 10) -> bool:
     try:
         if site == "leetcode":
             WebDriverWait(browser, timeout).until(
-                Expected.presence_of_element_located((By.CSS_SELECTOR, 'img.avatar')))
+                Expected.presence_of_element_located((
+                    By.CSS_SELECTOR, '#navbar-right-container > div > a.ant-dropdown-link')))
         else:  # site == "leetcode-cn"
             WebDriverWait(browser, timeout).until(
-                Expected.presence_of_element_located((By.CSS_SELECTOR, 'span.ant-avatar')))
+                Expected.presence_of_element_located((
+                    By.CSS_SELECTOR, 'nav div[data-cypress="NavbarMenuIconItem"] > span')))
         return True
     except TimeoutException:
         return False
@@ -55,6 +57,7 @@ def check_login(browser, site: str, timeout: int = 10) -> bool:
 
 def update_cookie(username: str, site: str) -> None:
     r"""Update the cookie for the LeetCode user."""
+    print("A browser window will open shortly. Do not interact with the window until further instructions.")
     browser = webdriver.Chrome()
     browser.set_window_position(0, 0)
     browser.set_window_size(800, 600)
@@ -68,20 +71,12 @@ def update_cookie(username: str, site: str) -> None:
             Expected.visibility_of_element_located((By.CSS_SELECTOR, 'button[data-cy="sign-in-btn"]')))
     else:  # site == "leetcode-cn"
         WebDriverWait(browser, 10).until(
-            Expected.visibility_of_element_located((By.CSS_SELECTOR, 'button[type="primary"]')))
+            Expected.visibility_of_element_located((By.CSS_SELECTOR, 'button[type="submit"]')))
+    print("Login page loaded. Please enter your password in the browser window.")
 
     elem = browser.find_element_by_css_selector('input[name="login"]')
     elem.clear()
     elem.send_keys(username)
-
-    # elem = browser.find_element_by_css_selector('input[type="password"]')
-    # elem.clear()
-    # elem.send_keys(password)
-    #
-    # print("User credentials filled")
-    #
-    # elem = browser.find_element_by_css_selector('button[data-cy="sign-in-btn"]')
-    # browser.execute_script("arguments[0].click();", elem)
 
     if not check_login(browser, site, timeout=120):
         raise RuntimeError("Login failed!")
