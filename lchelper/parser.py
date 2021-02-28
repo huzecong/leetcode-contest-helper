@@ -133,7 +133,7 @@ def parse_problem(problem: Problem, site: str = "leetcode") -> Union[ProblemSign
         for ex_id, example in enumerate(problem.examples):
             try:
                 input_str = find_example_section(example, "输入", "输出", "：")
-                output_str = find_example_section(example, "输出", "解释", "：")
+                output_str = find_example_section(example, "输出", "解释", "：", ignore_error=True)
             except ValueError:
                 input_str = find_example_section(example, "Input", "Output", ignore_error=True)
                 output_str = find_example_section(example, "Output", "Explanation", ignore_error=True)
