@@ -13,7 +13,7 @@ def to_dict(nm_tpl: NamedTuple) -> Dict[str, Any]:
     return nm_tpl._asdict()
 
 
-TupleType = TypeVar('TupleType', bound=NamedTuple)
+TupleType = TypeVar("TupleType", bound=NamedTuple)
 
 
 def from_dict(tpl_class: Type[TupleType], d: Dict[str, Any]) -> TupleType:
@@ -21,11 +21,13 @@ def from_dict(tpl_class: Type[TupleType], d: Dict[str, Any]) -> TupleType:
     return tpl_class(**d)
 
 
-def remove_affix(s: str, prefix: Optional[str] = None, suffix: Optional[str] = None) -> str:
+def remove_affix(
+    s: str, prefix: Optional[str] = None, suffix: Optional[str] = None
+) -> str:
     if prefix is not None and s.startswith(prefix):
-        s = s[len(prefix):]
+        s = s[len(prefix) :]
     if suffix is not None and s.endswith(suffix):
-        s = s[:-len(suffix)]
+        s = s[: -len(suffix)]
     return s
 
 
@@ -40,5 +42,5 @@ def register_excepthook():
     # enter IPython debugger on exception
     from IPython.core import ultratb
 
-    ipython_hook = ultratb.FormattedTB(mode='Context', color_scheme='Linux', call_pdb=1)
+    ipython_hook = ultratb.FormattedTB(mode="Context", color_scheme="Linux", call_pdb=1)
     sys.excepthook = excepthook

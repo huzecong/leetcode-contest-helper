@@ -1,10 +1,7 @@
-import os
-from collections import defaultdict
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple
 
 from lchelper.codegen.base import Code, CodeGen, Signature
 from lchelper.common import *
-from lchelper.utils import remove_affix
 
 __all__ = [
     "PythonCodeGen",
@@ -103,7 +100,7 @@ def evaluate(msg: str, a, b):
     def _convert_cpp_type(self, type_name: str) -> str:
         type_name = type_name.strip().rstrip("*&")
         if type_name.startswith("vector<") and type_name.endswith(">"):
-            inner_type_name = type_name[len("vector<"):-len(">")]
+            inner_type_name = type_name[len("vector<") : -len(">")]
             return f"List[{self._convert_cpp_type(inner_type_name)}]"
         return self.TYPE_MAP.get(type_name, type_name)
 
@@ -116,21 +113,25 @@ def evaluate(msg: str, a, b):
             functions = [signature.function]
         fn_codes = []
         for func_sig in functions:
-            args = "".join(f", {arg_name}: {self._convert_cpp_type(arg_type)}"
-                           for arg_type, arg_name in func_sig.arguments)
+            args = "".join(
+                f", {arg_name}: {self._convert_cpp_type(arg_type)}"
+                for arg_type, arg_name in func_sig.arguments
+            )
             if func_sig.name == class_name:
-                fn_code = [
-                    f"    def __init__(self{args}):",
-                    f"        pass"]
+                fn_code = [f"    def __init__(self{args}):", f"        pass"]
             else:
+                ret_annotation = self._convert_cpp_type(func_sig.return_type)
                 fn_code = [
-                    f"    def {func_sig.name}(self{args}) -> {self._convert_cpp_type(func_sig.return_type)}:",
-                    f"        pass"]
+                    f"    def {func_sig.name}(self{args}) -> {ret_annotation}:",
+                    f"        pass",
+                ]
             fn_codes.append(fn_code)
         code = [f"class {class_name}:"] + self.list_join(fn_codes, [""])
         return code
 
-    def generate_code(self, problem: Problem, signature: Signature) -> Tuple[Code, Code]:
+    def generate_code(
+        self, problem: Problem, signature: Signature
+    ) -> Tuple[Code, Code]:
         # Convert C++ code to Python code.
         solution_code = self.generate_solution_code(signature)
 
@@ -146,7 +147,8 @@ def evaluate(msg: str, a, b):
             assert False
 
         def to_tree(parent: List[Optional[int]]) -> str:
-            return f"_construct_tree([{', '.join('None' if x is None else str(x) for x in parent)}])"
+            values = ["None" if x is None else str(x) for x in parent]
+            return f"_construct_tree([{', '.join(values)}])"
 
         def to_val(val: Any, type_name: str) -> str:
             if self._convert_cpp_type(type_name) == "TreeNode":
@@ -155,10 +157,12 @@ def evaluate(msg: str, a, b):
 
         def to_args(input: Dict[str, Any], func_sig: FunctionSignature) -> List[str]:
             # Return list of assignments.
-            assignments = []
-            for type_name, arg_name in func_sig.arguments:
-                assignments.append(assign(f"{func_sig.name}_{arg_name}", to_val(input[arg_name], type_name)))
-            return assignments
+            return [
+                assign(
+                    f"{func_sig.name}_{arg_name}", to_val(input[arg_name], type_name)
+                )
+                for type_name, arg_name in func_sig.arguments
+            ]
 
         def call(func_name: str, args: List[str]) -> str:
             return f"{func_name}({', '.join(args)})"
@@ -173,13 +177,18 @@ def evaluate(msg: str, a, b):
         test_functions = []
         instance_name = "_sol"
         if isinstance(signature, InteractiveProblemSignature):
-            func_map: Dict[str, FunctionSignature] = {func_sig.name: func_sig for func_sig in signature.functions}
+            func_map: Dict[str, FunctionSignature] = {
+                func_sig.name: func_sig for func_sig in signature.functions
+            }
             for idx, example in enumerate(signature.examples):
                 statements = []
                 for ex_idx, ex in enumerate(example):
                     func_sig = func_map[ex.function]
                     statements.extend(to_args(ex.input, func_sig))
-                    args = [f"{func_sig.name}_{arg_name}" for _, arg_name in func_sig.arguments]
+                    args = [
+                        f"{func_sig.name}_{arg_name}"
+                        for _, arg_name in func_sig.arguments
+                    ]
                     if ex.function == signature.class_name:
                         ctor_stmt = ctor(signature.class_name, instance_name, args)
                         statements.append(ctor_stmt)
@@ -188,10 +197,24 @@ def evaluate(msg: str, a, b):
                         if func_sig.return_type != "void":
                             ret_ans_var = f"_ret_ans{ex_idx}"
                             stmts = [
-                                assign(ret_ans_var, to_val(ex.output, func_sig.return_type)),
-                                assign(ret_name, f"{instance_name}.{call(ex.function, args)}"),
-                                call("evaluate", [to_str(f"{problem.name} - Example {idx} - Interaction {ex_idx}"),
-                                                  ret_ans_var, ret_name]),
+                                assign(
+                                    ret_ans_var, to_val(ex.output, func_sig.return_type)
+                                ),
+                                assign(
+                                    ret_name,
+                                    f"{instance_name}.{call(ex.function, args)}",
+                                ),
+                                call(
+                                    "evaluate",
+                                    [
+                                        to_str(
+                                            f"{problem.name} - Example {idx} -"
+                                            f" Interaction {ex_idx}"
+                                        ),
+                                        ret_ans_var,
+                                        ret_name,
+                                    ],
+                                ),
                             ]
                             statements.extend(stmts)
                         else:
@@ -199,16 +222,21 @@ def evaluate(msg: str, a, b):
                             statements.append(stmt)
                 test_fn = [
                     f"def eval_example_{idx}():",
-                    *["    " + line for line in statements]]
+                    *["    " + line for line in statements],
+                ]
                 test_functions.append(test_fn)
 
             main_code = [
                 "def main():",
-                *["    " + f"eval_example_{idx}()" for idx in range(len(signature.examples))],
+                *[
+                    "    " + f"eval_example_{idx}()"
+                    for idx in range(len(signature.examples))
+                ],
                 "",
                 "",
                 "if __name__ == '__main__':",
-                "    main()"]
+                "    main()",
+            ]
         else:
             func_sig = signature.function
             for idx, example in enumerate(signature.examples):
@@ -222,23 +250,35 @@ def evaluate(msg: str, a, b):
                 stmts = [
                     assign(ret_ans_var, to_val(example.output, func_sig.return_type)),
                     assign(ret_name, f"{instance_name}.{call(func_sig.name, args)}"),
-                    call("evaluate", [to_str(f"{problem.name} - Example {idx}"), ret_ans_var, ret_name]),
+                    call(
+                        "evaluate",
+                        [
+                            to_str(f"{problem.name} - Example {idx}"),
+                            ret_ans_var,
+                            ret_name,
+                        ],
+                    ),
                 ]
                 statements.extend(stmts)
 
                 test_fn = [
                     f"def eval_example_{idx}(_sol: Solution):",
-                    *["    " + line for line in statements]]
+                    *["    " + line for line in statements],
+                ]
                 test_functions.append(test_fn)
 
             main_code = [
                 "def main():",
                 "    _sol = Solution()",
-                *[f"    eval_example_{idx}(_sol)" for idx in range(len(signature.examples))],
+                *[
+                    f"    eval_example_{idx}(_sol)"
+                    for idx in range(len(signature.examples))
+                ],
                 "",
                 "",
                 "if __name__ == '__main__':",
-                "    main()"]
+                "    main()",
+            ]
 
         test_code = self.list_join(test_functions + [main_code], ["", ""])
         return solution_code, test_code

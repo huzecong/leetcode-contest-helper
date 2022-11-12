@@ -2,7 +2,7 @@ import argparse
 import os
 import pickle
 import sys
-from typing import Any, Dict, List, Optional, NoReturn
+from typing import Any, Dict, List, NoReturn, Optional
 from urllib.parse import urlparse
 
 import lchelper
@@ -23,25 +23,70 @@ def parse_args():
     parser.add_argument("--debug", action="store_true", default=False)
     subparsers = parser.add_subparsers(dest="command")
 
-    parser_login = subparsers.add_parser("login", help="Log in using your LeetCode account")
+    parser_login = subparsers.add_parser(
+        "login", help="Log in using your LeetCode account"
+    )
     parser_login.add_argument("username", help="Your LeetCode account username")
-    parser_login.add_argument("-s", "--site", dest="site", choices=["leetcode", "leetcode-cn"], default="leetcode",
-                              help="The LeetCode site for the account")
+    parser_login.add_argument(
+        "-s",
+        "--site",
+        dest="site",
+        choices=["leetcode", "leetcode-cn"],
+        default="leetcode",
+        help="The LeetCode site for the account",
+    )
 
-    parser_get = subparsers.add_parser("get", help="Download contest problems and generate testing code")
-    parser_get.add_argument("-u", "--username", dest="username", default=None,
-                            help="The LeetCode account to use, required if you logged in with multiple accounts")
-    parser_get.add_argument("-l", "--lang", metavar="LANG", dest="lang", action="append", required=True,
-                            choices=list(lchelper.LANGUAGES.keys()),
-                            help="Languages to generate testing code for, supported languages are: [%(choices)s]")
-    parser_get.add_argument("--no-cache", action="store_true", default=False,
-                            help="Do not use cached problem descriptions when generating code")
-    parser_get.add_argument("-o", "--output", dest="output", default="./",
-                            help="The path to store generated projects")
-    parser_get.add_argument("-p", "--prefix", dest="prefix", default=None,
-                            help="Prefix for project folders, if not specified, the contest name (e.g. "
-                                 "\"weekly-contest-162\") if used")
-    parser_get.add_argument("url", help="URL to the contest page, or the contest name (e.g. \"weekly-contest-162\")")
+    parser_get = subparsers.add_parser(
+        "get", help="Download contest problems and generate testing code"
+    )
+    parser_get.add_argument(
+        "-u",
+        "--username",
+        dest="username",
+        default=None,
+        help=(
+            "The LeetCode account to use, required if you logged in with multiple"
+            " accounts"
+        ),
+    )
+    parser_get.add_argument(
+        "-l",
+        "--lang",
+        metavar="LANG",
+        dest="lang",
+        action="append",
+        required=True,
+        choices=list(lchelper.LANGUAGES.keys()),
+        help=(
+            "Languages to generate testing code for, supported languages are:"
+            " [%(choices)s]"
+        ),
+    )
+    parser_get.add_argument(
+        "--no-cache",
+        action="store_true",
+        default=False,
+        help="Do not use cached problem descriptions when generating code",
+    )
+    parser_get.add_argument(
+        "-o",
+        "--output",
+        dest="output",
+        default="./",
+        help="The path to store generated projects",
+    )
+    parser_get.add_argument(
+        "-p",
+        "--prefix",
+        dest="prefix",
+        default=None,
+        help="Prefix for project folders, if not specified, the contest name (e.g. "
+        '"weekly-contest-162") if used',
+    )
+    parser_get.add_argument(
+        "url",
+        help='URL to the contest page, or the contest name (e.g. "weekly-contest-162")',
+    )
 
     args = parser.parse_args()
     if not args.command:
@@ -68,8 +113,12 @@ def main():
 
         url_parse = urlparse(args.url)
         if url_parse.netloc != "":  # URL instead of name
-            contest_name = args.url.rstrip('/').split('/')[-1]  # use the final URL segment as contest nme
-            site: Optional[str] = lchelper.utils.remove_affix(url_parse.netloc, "www.", ".com")
+            contest_name = args.url.rstrip("/").split("/")[
+                -1
+            ]  # use the final URL segment as contest nme
+            site: Optional[str] = lchelper.utils.remove_affix(
+                url_parse.netloc, "www.", ".com"
+            )
         else:
             contest_name = args.url
             site = None
@@ -82,31 +131,49 @@ def main():
         if cached_problems is None:
             available_users = lchelper.get_users()
             if len(available_users) == 0:
-                print(f"You're not logged in. Please run `{PROGRAM} login <username>` first.")
+                print(
+                    f"You're not logged in. Please run `{PROGRAM} login <username>`"
+                    f" first."
+                )
                 exit(1)
 
             candidates = user_candidates = available_users
             if args.username is not None:
-                candidates = user_candidates = [user for user in candidates if user.username == args.username]
+                candidates = user_candidates = [
+                    user for user in candidates if user.username == args.username
+                ]
             if site is not None:
                 candidates = [user for user in candidates if user.site == site]
-            # If there exist multiple candidates with different usernames, raise an error to avoid ambiguity.
+            # If there exist multiple candidates with different usernames, raise an
+            # error to avoid ambiguity.
             if len(set(user.username for user in candidates)) > 1:
-                print(f"You have logged in with multiple accounts: {', '.join(repr(s) for s in candidates)}.\n"
-                      f"Please select the user using the `-u <username>` flag.")
+                print(
+                    f"You have logged in with multiple accounts:"
+                    f" {', '.join(repr(s) for s in candidates)}.\n"
+                    f"Please select the user using the `-u <username>` flag."
+                )
                 exit(1)
             if len(candidates) == 0:
                 if args.username is not None:
                     if len(user_candidates) > 0:
-                        print(f"The specified user '{args.username}' is not from the site '{site}'.\n"
-                              f"Please log in with a user from '{site}' by running "
-                              f"`{PROGRAM} login -s {site} <username>`.")
+                        print(
+                            f"The specified user {args.username!r} is not from the site"
+                            f" {site!r}.\n"
+                            f"Please log in with a user from {site!r} by running "
+                            f"`{PROGRAM} login -s {site} <username>`."
+                        )
                     else:
-                        print(f"The specified user '{args.username}' is not logged in.\n"
-                              f"Please log in by running `{PROGRAM} login {args.username}` first.")
+                        print(
+                            f"The specified user {args.username!r} is not logged in.\n"
+                            f"Please log in by running"
+                            f" `{PROGRAM} login {args.username}` first."
+                        )
                 else:
-                    print(f"There are no users from the site '{site}'.\n"
-                          f"Please log in with a user from '{site}' by running `{PROGRAM} login -s {site} <username>`.")
+                    print(
+                        f"There are no users from the site {site!r}.\n"
+                        f"Please log in with a user from {site!r} by running"
+                        f" `{PROGRAM} login -s {site} <username>`."
+                    )
                 exit(1)
 
             user = candidates[0]
@@ -120,14 +187,21 @@ def main():
             with open(CACHE_FILE, "wb") as f:
                 pickle.dump(info, f)
         else:
-            problems = [lchelper.utils.from_dict(lchelper.Problem, p) for p in cached_problems]
+            problems = [
+                lchelper.utils.from_dict(lchelper.Problem, p) for p in cached_problems
+            ]
 
         for lang in args.lang:
             codegen = lchelper.create_codegen(lang)
-            project_path = os.path.join(args.output, f"{(args.prefix or contest_name)}_{lang}")
+            project_path = os.path.join(
+                args.output, f"{(args.prefix or contest_name)}_{lang}"
+            )
             codegen.create_project(project_path, problems, site, debug=args.debug)
-            lchelper.log(f"Project in language '{lang}' stored at: {project_path}", "success")
+            lchelper.log(
+                f"Project in language {lang!r} stored at: {project_path}",
+                level="success",
+            )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

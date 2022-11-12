@@ -14,11 +14,13 @@ COLOR_MAP = {
 }
 
 
-def log(msg: str, level: str = "info") -> None:
-    r"""Write a line of log with the specified logging level.
+def log(msg: str, *, level: str = "info") -> None:
+    """
+    Write a line of log with the specified logging level.
 
     :param msg: Message to log.
-    :param level: Logging level. Available options are ``success``, ``warning``, ``error``, and ``info``.
+    :param level: Logging level. Available options are ``success``, ``warning``,
+                  ``error``, and ``info``.
     """
     if level not in COLOR_MAP:
         raise ValueError(f"Incorrect logging level '{level}'")

@@ -237,7 +237,9 @@ inline double runtime() {
 #define tget(a, b) get<b>(a)
 """
 
-    def generate_code(self, problem: Problem, signature: Signature) -> Tuple[Code, Code]:
+    def generate_code(
+        self, problem: Problem, signature: Signature
+    ) -> Tuple[Code, Code]:
         # Generate solution code as the crawled template.
         solution_code = problem.code.copy()
 
@@ -255,19 +257,22 @@ inline double runtime() {
             assert False
 
         def to_tree(parent: List[Optional[int]]) -> str:
-            return f"_construct_tree({{{', '.join('NONE' if x is None else str(x) for x in parent)}}})"
+            values = ["NONE" if x is None else str(x) for x in parent]
+            return f"_construct_tree({{{', '.join(values)}}})"
 
         def to_val(val: Any, type_name: str) -> str:
-            if type_name.replace(' ', '') == "TreeNode*":
+            if type_name.replace(" ", "") == "TreeNode*":
                 return to_tree(val)
             return to_str(val)
 
         def to_args(input: Dict[str, Any], func_sig: FunctionSignature) -> List[str]:
             # Return list of assignments.
-            assignments = []
-            for type_name, arg_name in func_sig.arguments:
-                assignments.append(assign(f"{func_sig.name}_{arg_name}", to_val(input[arg_name], type_name)))
-            return assignments
+            return [
+                assign(
+                    f"{func_sig.name}_{arg_name}", to_val(input[arg_name], type_name)
+                )
+                for type_name, arg_name in func_sig.arguments
+            ]
 
         def call(func_name: str, args: List[str]) -> str:
             return f"{func_name}({', '.join(args)})"
@@ -278,9 +283,9 @@ inline double runtime() {
         def remove_cv_ref(typ: str) -> str:
             while True:
                 if typ.startswith("const"):
-                    typ = typ[len("const"):]
+                    typ = typ[len("const") :]
                 elif typ.startswith("volatile"):
-                    typ = typ[len("volatile"):]
+                    typ = typ[len("volatile") :]
                 elif typ.endswith("&"):
                     typ = typ[:-1]
                 else:
@@ -305,13 +310,18 @@ inline double runtime() {
         test_functions = []
         instance_name = "_sol"
         if isinstance(signature, InteractiveProblemSignature):
-            func_map: Dict[str, FunctionSignature] = {func_sig.name: func_sig for func_sig in signature.functions}
+            func_map: Dict[str, FunctionSignature] = {
+                func_sig.name: func_sig for func_sig in signature.functions
+            }
             for idx, example in enumerate(signature.examples):
                 statements = []
                 for ex_idx, ex in enumerate(example):
                     func_sig = func_map[ex.function]
                     statements.extend(to_args(ex.input, func_sig))
-                    args = [f"{func_sig.name}_{arg_name}" for _, arg_name in func_sig.arguments]
+                    args = [
+                        f"{func_sig.name}_{arg_name}"
+                        for _, arg_name in func_sig.arguments
+                    ]
                     if ex.function == signature.class_name:
                         ctor_stmt = ctor(signature.class_name, instance_name, args)
                         statements.append(ctor_stmt)
@@ -320,11 +330,28 @@ inline double runtime() {
                         if func_sig.return_type != "void":
                             ret_ans_var = f"_ret_ans{ex_idx}"
                             stmts = [
-                                decl_assign(func_sig.return_type, ret_ans_var, to_val(ex.output, func_sig.return_type)),
-                                decl_assign(func_sig.return_type, ret_name,
-                                            f"{instance_name}.{call(ex.function, args)}"),
-                                call("test", [to_str(f"{problem.name} - Example {idx} - Interaction {ex_idx}"),
-                                              ret_ans_var, ret_name]) + ";",
+                                decl_assign(
+                                    func_sig.return_type,
+                                    ret_ans_var,
+                                    to_val(ex.output, func_sig.return_type),
+                                ),
+                                decl_assign(
+                                    func_sig.return_type,
+                                    ret_name,
+                                    f"{instance_name}.{call(ex.function, args)}",
+                                ),
+                                call(
+                                    "test",
+                                    [
+                                        to_str(
+                                            f"{problem.name} - Example {idx} -"
+                                            f" Interaction {ex_idx}"
+                                        ),
+                                        ret_ans_var,
+                                        ret_name,
+                                    ],
+                                )
+                                + ";",
                             ]
                             statements.extend(stmts)
                         else:
@@ -336,49 +363,81 @@ inline double runtime() {
                         declarations[type_name].append(f"{func_sig.name}_{arg_name}")
                 test_fn = [
                     f"void test_example_{idx}() {{",
-                    *["    " + decl(type_name, objs) for type_name, objs in declarations.items()],
+                    *[
+                        "    " + decl(type_name, objs)
+                        for type_name, objs in declarations.items()
+                    ],
                     *["    " + line for line in statements],
-                    "}"]
+                    "}",
+                ]
                 test_functions.append(test_fn)
 
             main_code = [
                 "int main() {",
-                *["    " + f"test_example_{idx}();" for idx in range(len(signature.examples))],
-                "}"]
+                *[
+                    "    " + f"test_example_{idx}();"
+                    for idx in range(len(signature.examples))
+                ],
+                "}",
+            ]
         else:
             func_sig = signature.function
             for idx, example in enumerate(signature.examples):
                 statements = []
                 for type_name, arg_name in func_sig.arguments:
-                    stmt = decl_assign(type_name, arg_name, to_val(example.input[arg_name], type_name))
+                    stmt = decl_assign(
+                        type_name, arg_name, to_val(example.input[arg_name], type_name)
+                    )
                     statements.append(stmt)
                 args = [arg_name for _, arg_name in func_sig.arguments]
                 ret_name = "_ret"
                 ret_ans_var = "_ret_ans"
                 stmts = [
-                    decl_assign(func_sig.return_type, ret_ans_var, to_val(example.output, func_sig.return_type)),
-                    decl_assign(func_sig.return_type, ret_name, f"{instance_name}.{call(func_sig.name, args)}"),
-                    call("test", [to_str(f"{problem.name} - Example {idx}"), ret_ans_var, ret_name]) + ";",
+                    decl_assign(
+                        func_sig.return_type,
+                        ret_ans_var,
+                        to_val(example.output, func_sig.return_type),
+                    ),
+                    decl_assign(
+                        func_sig.return_type,
+                        ret_name,
+                        f"{instance_name}.{call(func_sig.name, args)}",
+                    ),
+                    call(
+                        "test",
+                        [
+                            to_str(f"{problem.name} - Example {idx}"),
+                            ret_ans_var,
+                            ret_name,
+                        ],
+                    )
+                    + ";",
                 ]
                 statements.extend(stmts)
 
                 test_fn = [
                     f"void test_example_{idx}(Solution &_sol) {{",
                     *["    " + line for line in statements],
-                    "}"]
+                    "}",
+                ]
                 test_functions.append(test_fn)
 
             main_code = [
                 "int main() {",
                 "    Solution _sol;",
-                *[f"    test_example_{idx}(_sol);" for idx in range(len(signature.examples))],
-                "}"]
+                *[
+                    f"    test_example_{idx}(_sol);"
+                    for idx in range(len(signature.examples))
+                ],
+                "}",
+            ]
 
         test_code = self.list_join(test_functions + [main_code], ["", ""])
         return solution_code, test_code
 
-    def generate_additional_files(self, project_path: str, problems: List[Problem],
-                                  signatures: List[Signature]) -> None:
+    def generate_additional_files(
+        self, project_path: str, problems: List[Problem], signatures: List[Signature]
+    ) -> None:
         cmake = [
             "cmake_minimum_required(VERSION 3.12)",
             "project(leetcode)",
