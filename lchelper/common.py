@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import Any, Dict, List, NamedTuple, Optional, Tuple
 
 __all__ = [
@@ -11,7 +12,8 @@ __all__ = [
 ]
 
 
-class User(NamedTuple):
+@dataclass
+class User:
     username: str
     site: str  # "leetcode" or "leetcode-cn"
 
@@ -21,7 +23,8 @@ class User(NamedTuple):
         return f"{self.username} ({self.site})"
 
 
-class Problem(NamedTuple):
+@dataclass
+class Problem:
     """Raw description of the problem crawled from the web page."""
 
     url: str
@@ -32,7 +35,8 @@ class Problem(NamedTuple):
     code: List[str]  # template code, in lines
 
 
-class FunctionSignature(NamedTuple):
+@dataclass
+class FunctionSignature:
     """Signature of a function."""
 
     name: str
@@ -40,21 +44,24 @@ class FunctionSignature(NamedTuple):
     return_type: str
 
 
-class Example(NamedTuple):
+@dataclass
+class Example:
     """An example test case, consisting of an input--output pair."""
 
     input: Dict[str, Any]
     output: Any
 
 
-class ProblemSignature(NamedTuple):
+@dataclass
+class ProblemSignature:
     """Signature of a problem, including the function signature and test cases."""
 
     function: FunctionSignature
     examples: List[Example]
 
 
-class Interaction(NamedTuple):
+@dataclass
+class Interaction:
     """
     An "interaction" in interactive problems. An example test case for interactive
     problems consist of multiple "interactions", where each interaction calls a specific
@@ -66,7 +73,8 @@ class Interaction(NamedTuple):
     output: Optional[Any]
 
 
-class InteractiveProblemSignature(NamedTuple):
+@dataclass
+class InteractiveProblemSignature:
     """Signature of an interactive problem."""
 
     class_name: str

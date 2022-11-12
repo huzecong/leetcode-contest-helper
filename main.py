@@ -1,4 +1,5 @@
 import argparse
+import dataclasses
 import os
 import pickle
 import sys
@@ -183,13 +184,11 @@ def main():
 
             problems = lchelper.get_problems(url, user.site, cookie_path)
 
-            info[site, contest_name] = [lchelper.utils.to_dict(p) for p in problems]
+            info[site, contest_name] = [dataclasses.asdict(p) for p in problems]
             with open(CACHE_FILE, "wb") as f:
                 pickle.dump(info, f)
         else:
-            problems = [
-                lchelper.utils.from_dict(lchelper.Problem, p) for p in cached_problems
-            ]
+            problems = [lchelper.Problem(**p) for p in cached_problems]
 
         for lang in args.lang:
             codegen = lchelper.create_codegen(lang)

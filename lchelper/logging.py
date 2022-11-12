@@ -1,5 +1,3 @@
-import time
-
 from termcolor import colored
 
 __all__ = [

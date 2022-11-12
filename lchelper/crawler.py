@@ -93,7 +93,7 @@ def update_cookie(username: str, site: str) -> None:
         )
     print("Login page loaded. Please enter your password in the browser window.")
 
-    elem = browser.find_element_by_css_selector('input[name="login"]')
+    elem = browser.find_element(By.CSS_SELECTOR, 'input[name="login"]')
     elem.clear()
     elem.send_keys(username)
 
@@ -167,8 +167,8 @@ def get_problems(contest_url: str, site: str, cookie_path: str) -> List[Problem]
         print(f"Cookie '{cookie_path}' might have expired. Please try logging in again")
         exit(1)
 
-    elem = browser.find_element_by_css_selector("ul.contest-question-list")
-    links = elem.find_elements_by_tag_name("a")
+    elem = browser.find_element(By.CSS_SELECTOR, "ul.contest-question-list")
+    links = elem.find_elements(By.TAG_NAME, "a")
     problem_paths = [(link.get_attribute("href"), link.text) for link in links]
     log(f"Found problems: {[name for _, name in problem_paths]!r}")
 
@@ -179,8 +179,8 @@ def get_problems(contest_url: str, site: str, cookie_path: str) -> List[Problem]
             # Page during contest; editor located below statement.
             statement_css_selector = "div.question-content"
             code_css_selector = "pre.CodeMirror-line"
-            statement = browser.find_element_by_css_selector(
-                statement_css_selector
+            statement = browser.find_element(
+                By.CSS_SELECTOR, statement_css_selector
             ).text
         except (TimeoutException, NoSuchElementException):
             # Page after contest; statement and editor in vertically split panes.
@@ -188,18 +188,18 @@ def get_problems(contest_url: str, site: str, cookie_path: str) -> List[Problem]
                 "div[data-key='description-content'] div.content__1Y2H"
             )
             code_css_selector = "div.monaco-scrollable-element div.view-line"
-            statement = browser.find_element_by_css_selector(
-                statement_css_selector
+            statement = browser.find_element(
+                By.CSS_SELECTOR, statement_css_selector
             ).text
         examples = [
             elem.text
-            for elem in browser.find_elements_by_css_selector("pre:not([class])")
+            for elem in browser.find_elements(By.CSS_SELECTOR, "pre:not([class])")
             if elem.text
         ]
         # TODO: Should make sure C++ is selected!
         code = [
             elem.text
-            for elem in browser.find_elements_by_css_selector(code_css_selector)
+            for elem in browser.find_elements(By.CSS_SELECTOR, code_css_selector)
         ]
         problem = Problem(problem_url, problem_name, statement, examples, code)
         parsed_problems.append(problem)

@@ -1,24 +1,10 @@
 import sys
-from typing import Any, Dict, NamedTuple, Optional, Type, TypeVar
+from typing import Optional
 
 __all__ = [
-    "to_dict",
-    "from_dict",
     "remove_affix",
     "register_excepthook",
 ]
-
-
-def to_dict(nm_tpl: NamedTuple) -> Dict[str, Any]:
-    return nm_tpl._asdict()
-
-
-TupleType = TypeVar("TupleType", bound=NamedTuple)
-
-
-def from_dict(tpl_class: Type[TupleType], d: Dict[str, Any]) -> TupleType:
-    assert all(field in d for field in tpl_class._fields)
-    return tpl_class(**d)
 
 
 def remove_affix(
@@ -42,5 +28,7 @@ def register_excepthook():
     # enter IPython debugger on exception
     from IPython.core import ultratb
 
-    ipython_hook = ultratb.FormattedTB(mode="Context", color_scheme="Linux", call_pdb=1)
+    ipython_hook = ultratb.FormattedTB(
+        mode="Context", color_scheme="Linux", call_pdb=True
+    )
     sys.excepthook = excepthook
