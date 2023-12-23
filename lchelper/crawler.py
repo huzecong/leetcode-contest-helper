@@ -47,7 +47,7 @@ def check_login(browser, site: str, timeout: int = 10) -> bool:
                 Expected.presence_of_element_located(
                     (
                         By.CSS_SELECTOR,
-                        "#navbar-right-container > div > a.ant-dropdown-link",
+                        "#navbar_user_avatar",
                     )
                 )
             )
